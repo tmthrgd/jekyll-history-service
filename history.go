@@ -101,7 +101,7 @@ var (
 	templateFuncs = map[string]interface{}{
 		"asset_path": assetPath,
 		"html5_attr": html5Attr,
-		"truncate": truncate,
+		"truncate":   truncate,
 	}
 
 	indexTemplate = template.Must(template.New("index.tmpl").Funcs(templateFuncs).ParseFiles("views/index.tmpl"))
