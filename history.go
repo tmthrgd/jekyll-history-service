@@ -259,12 +259,16 @@ func Repo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		Commits: commits,
 		Resp:    resp,
 	}); err != nil {
+		w.Header().Del("Cache-Control")
+
 		log.Printf("%[1]T %[1]v", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }
 
 func Commit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	w.Header().Set("Cache-Control", "max-age=0")
+
 	user, repo, commit := ps.ByName("user"), ps.ByName("repo"), ps.ByName("commit")
 
 	data := user + "\x00" + repo + "\x00" + commit
