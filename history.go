@@ -160,6 +160,8 @@ func User(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if pageStr := ps.ByName("page"); len(pageStr) != 0 {
 		var err error
 		if page, err = strconv.Atoi(pageStr); err != nil || page <= 0 {
+			w.Header().Del("Cache-Control")
+
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
 		}
@@ -182,6 +184,8 @@ func User(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		},
 	})
 	if err != nil {
+		w.Header().Del("Cache-Control")
+
 		log.Printf("%[1]T %[1]v", err)
 		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
 		return
@@ -196,6 +200,8 @@ func User(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		Repos: repos,
 		Resp:  resp,
 	}); err != nil {
+		w.Header().Del("Cache-Control")
+
 		log.Printf("%[1]T %[1]v", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
@@ -213,6 +219,8 @@ func Repo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if pageStr := ps.ByName("page"); len(pageStr) != 0 {
 		var err error
 		if page, err = strconv.Atoi(pageStr); err != nil || page <= 0 {
+			w.Header().Del("Cache-Control")
+
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
 		}
@@ -233,6 +241,8 @@ func Repo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		},
 	})
 	if err != nil {
+		w.Header().Del("Cache-Control")
+
 		log.Printf("%[1]T %[1]v", err)
 		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
 		return
