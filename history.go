@@ -96,7 +96,15 @@ func (hs *hostSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+var listCacheControl = fmt.Sprintf("public, max-age=%d", time.Minute/time.Second)
+
 func User(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	w.Header().Set("Cache-Control", listCacheControl)
+
+	if checkLastModified(w, r, time.Now(), time.Minute) {
+		return
+	}
+
 	var page int = 1
 
 	if pageStr := ps.ByName("page"); len(pageStr) != 0 {
@@ -165,6 +173,12 @@ func User(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 }
 
 func Repo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	w.Header().Set("Cache-Control", listCacheControl)
+
+	if checkLastModified(w, r, time.Now(), time.Minute) {
+		return
+	}
+
 	var page int = 1
 
 	if pageStr := ps.ByName("page"); len(pageStr) != 0 {
@@ -269,7 +283,7 @@ func Commit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 }
 
 var (
-	cacheControl = fmt.Sprintf("public, max-age=%d", (10*365*24*time.Hour)/time.Second)
+	repoCacheControl = fmt.Sprintf("public, max-age=%d", (10*365*24*time.Hour)/time.Second)
 
 	timeZero time.Time
 
@@ -310,7 +324,7 @@ func (rs repoSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h := w.Header()
-	h.Set("Cache-Control", cacheControl)
+	h.Set("Cache-Control", repoCacheControl)
 	h.Set("Etag", `"`+tag+`"`)
 
 	if checkETag(w, r) {
