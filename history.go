@@ -101,6 +101,7 @@ var (
 	templateFuncs = map[string]interface{}{
 		"asset_path": assetPath,
 		"html5_attr": html5Attr,
+		"truncate": truncate,
 	}
 
 	indexTemplate = template.Must(template.New("index.tmpl").Funcs(templateFuncs).ParseFiles("views/index.tmpl"))
@@ -122,6 +123,20 @@ func html5Attr(value string) string {
 	}
 
 	return `"` + value + `"`
+}
+
+func truncate(value string, length int) string {
+	numRunes := 0
+
+	for index, _ := range value {
+		numRunes++
+
+		if numRunes > length {
+			return value[:index]
+		}
+	}
+
+	return value
 }
 
 func Index(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

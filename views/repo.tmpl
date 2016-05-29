@@ -13,7 +13,7 @@
 	<ul>
 	{{- with $base := .}}
 	{{- range .Commits}}
-		<li><a href={{print "/u/" ($base.User | urlquery) "/r/" ($base.Repo | urlquery) "/c/" (.SHA | urlquery) "/" | html5_attr}}>{{$base.User | html}}/{{$base.Repo | html}}@<code>{{.SHA | html}}</code></a>:
+		<li><a href={{print "/u/" ($base.User | urlquery) "/r/" ($base.Repo | urlquery) "/c/" (.SHA | urlquery) "/" | html5_attr}}><code>{{html (truncate .SHA 10)}}</code></a>:
 			{{- if .Commit}} {{.Commit.Message | html}}{{end -}}
 		</li>
 	{{- end}}

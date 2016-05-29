@@ -13,7 +13,7 @@
 	<ul>
 	{{- with $base := .}}
 	{{- range .Repos}}
-		<li><a href={{print "/u/" ($base.User | urlquery) "/r/" (.Name | urlquery) "/" | html5_attr}}>{{.FullName | html}}</a>: {{.Description | html}}</li>
+		<li><a href={{print "/u/" ($base.User | urlquery) "/r/" (.Name | urlquery) "/" | html5_attr}}>{{.Name | html}}</a>: {{.Description | html}}</li>
 	{{- end}}
 	{{- end}}
 	</ul>
