@@ -25,6 +25,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -95,18 +96,33 @@ func (hs *hostSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-var repoListOpts = &github.RepositoryListOptions{
-	Sort: "updated",
-
-	ListOptions: github.ListOptions{
-		PerPage: 100,
-	},
-}
-
 func User(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var page int = 1
+
+	if pageStr := ps.ByName("page"); len(pageStr) != 0 {
+		var err error
+		if page, err = strconv.Atoi(pageStr); err != nil || page <= 0 {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		if page == 1 {
+			localRedirect(w, r, "../../")
+			return
+		}
+	}
+
 	user := ps.ByName("user")
 
-	repos, _, err := client.Repositories.List(user, repoListOpts)
+	repos, resp, err := client.Repositories.List(user, &github.RepositoryListOptions{
+		Sort: "updated",
+
+		ListOptions: github.ListOptions{
+			Page: page,
+
+			PerPage: 50,
+		},
+	})
 	if err != nil {
 		log.Printf("%[1]T %[1]v", err)
 		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
@@ -115,7 +131,7 @@ func User(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	htmlUser := html.EscapeString(user)
 
-	fmt.Fprintf(w, "<!doctype html>\n<title>%s</title>\n<p>%d repositories:</p>\n<ul>\n", htmlUser, len(repos))
+	fmt.Fprintf(w, "<!doctype html>\n<title>%[1]s</title>\n<h2>%[1]s</h2>\n<ul>\n", htmlUser)
 
 	for _, repo := range repos {
 		var desc string
@@ -124,23 +140,55 @@ func User(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 			desc = *repo.Description
 		}
 
-		fmt.Fprintf(w, "<li><a href=\"/u/%s/%s\">%s</a>: %s</li>\n", htmlUser, html.EscapeString(*repo.Name), html.EscapeString(*repo.FullName), html.EscapeString(desc))
+		fmt.Fprintf(w, "<li><a href=\"/u/%s/r/%s/\">%s</a>: %s</li>\n", htmlUser, html.EscapeString(*repo.Name), html.EscapeString(*repo.FullName), html.EscapeString(desc))
 	}
 
-	fmt.Fprint(w, "</ul>")
-}
+	fmt.Fprintf(w, "</ul>")
 
-var commitListOpts = &github.CommitsListOptions{
-	ListOptions: github.ListOptions{
-		PerPage: 100,
-	},
+	if resp.PrevPage != 0 || resp.NextPage != 0 {
+		fmt.Fprintf(w, "\n<p>")
+	}
+
+	if resp.PrevPage == 1 {
+		fmt.Fprintf(w, "<a href=\"/u/%s/\">← Prev page</a>", htmlUser)
+	} else if resp.PrevPage != 0 {
+		fmt.Fprintf(w, "<a href=\"/u/%s/p/%d/\">← Prev page</a>", htmlUser, resp.PrevPage)
+	}
+
+	if resp.PrevPage != 0 && resp.NextPage != 0 {
+		fmt.Fprint(w, " · ")
+	}
+
+	if resp.NextPage != 0 {
+		fmt.Fprintf(w, "<a href=\"/u/%s/p/%d/\">Next page →</a>", htmlUser, resp.NextPage)
+	}
 }
 
 func Repo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	user := ps.ByName("user")
-	repo := ps.ByName("repo")
+	var page int = 1
 
-	commits, _, err := client.Repositories.ListCommits(user, repo, commitListOpts)
+	if pageStr := ps.ByName("page"); len(pageStr) != 0 {
+		var err error
+		if page, err = strconv.Atoi(pageStr); err != nil || page <= 0 {
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		if page == 1 {
+			localRedirect(w, r, "../../")
+			return
+		}
+	}
+
+	user, repo := ps.ByName("user"), ps.ByName("repo")
+
+	commits, resp, err := client.Repositories.ListCommits(user, repo, &github.CommitsListOptions{
+		ListOptions: github.ListOptions{
+			Page: page,
+
+			PerPage: 50,
+		},
+	})
 	if err != nil {
 		log.Printf("%[1]T %[1]v", err)
 		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
@@ -150,7 +198,7 @@ func Repo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	htmlUser := html.EscapeString(user)
 	htmlRepo := html.EscapeString(repo)
 
-	fmt.Fprintf(w, "<!doctype html>\n<title>%s/%s</title>\n<p>%d commits:</p>\n<ul>\n", htmlUser, htmlRepo, len(commits))
+	fmt.Fprintf(w, "<!doctype html>\n<title>%[1]s/%[2]s</title>\n<h2>%[1]s/%[2]s</h2>\n<ul>\n", htmlUser, htmlRepo)
 
 	for _, commit := range commits {
 		var msg string
@@ -161,16 +209,32 @@ func Repo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 			msg = *commit.Commit.Message
 		}
 
-		fmt.Fprintf(w, "<li><a href=\"/u/%[1]s/%[2]s/%[3]s\">%[1]s/%[2]s@<code>%[3]s</code></a>: %[4]s</li>\n", htmlUser, htmlRepo, *commit.SHA, html.EscapeString(msg))
+		fmt.Fprintf(w, "<li><a href=\"/u/%[1]s/r/%[2]s/c/%[3]s/\">%[1]s/%[2]s@<code>%[3]s</code></a>: %[4]s</li>\n", htmlUser, htmlRepo, *commit.SHA, html.EscapeString(msg))
 	}
 
 	fmt.Fprint(w, "</ul>")
+
+	if resp.PrevPage != 0 || resp.NextPage != 0 {
+		fmt.Fprintf(w, "\n<p>")
+	}
+
+	if resp.PrevPage == 1 {
+		fmt.Fprintf(w, "<a href=\"/u/%s/r/%s/\">← Prev page</a>", htmlUser, htmlRepo)
+	} else if resp.PrevPage != 0 {
+		fmt.Fprintf(w, "<a href=\"/u/%s/r/%s/p/%d/\">← Prev page</a>", htmlUser, htmlRepo, resp.PrevPage)
+	}
+
+	if resp.PrevPage != 0 && resp.NextPage != 0 {
+		fmt.Fprint(w, " · ")
+	}
+
+	if resp.NextPage != 0 {
+		fmt.Fprintf(w, "<a href=\"/u/%s/r/%s/p/%d/\">Next page →</a>", htmlUser, htmlRepo, resp.NextPage)
+	}
 }
 
 func Commit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	user := ps.ByName("user")
-	repo := ps.ByName("repo")
-	commit := ps.ByName("commit")
+	user, repo, commit := ps.ByName("user"), ps.ByName("repo"), ps.ByName("commit")
 
 	data := user + "\x00" + repo + "\x00" + commit
 
@@ -566,9 +630,11 @@ func main() {
 	baseRouter.Handler(http.MethodGet, poolOpts.BasePath, httpPool)
 
 	baseRouter.GET("/u/:user/", User)
-	baseRouter.GET("/u/:user/:repo/", Repo)
-	baseRouter.GET("/u/:user/:repo/:commit", Commit)
-	baseRouter.GET("/u/:user/:repo/:commit/*path", Commit)
+	baseRouter.GET("/u/:user/p/:page/", User)
+	baseRouter.GET("/u/:user/r/:repo/", Repo)
+	baseRouter.GET("/u/:user/r/:repo/p/:page/", Repo)
+	baseRouter.GET("/u/:user/r/:repo/c/:commit", Commit)
+	baseRouter.GET("/u/:user/r/:repo/c/:commit/*path", Commit)
 
 	hs := new(hostSwitch)
 	hs.NotFound = new(repoSwitch)
