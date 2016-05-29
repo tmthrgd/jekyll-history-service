@@ -15,7 +15,7 @@ import (
 	"flag"
 	"fmt"
 	"hash/crc32"
-	"html"
+	"html/template"
 	"io"
 	"io/ioutil"
 	"log"
@@ -96,6 +96,27 @@ func (hs *hostSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+var (
+	templateFuncs = map[string]interface{}{
+		"asset_path": assetPath,
+	}
+
+	indexTemplate = template.Must(template.New("index.tmpl").Funcs(templateFuncs).ParseFiles("views/index.tmpl"))
+	userTemplate  = template.Must(template.New("user.tmpl").Funcs(templateFuncs).ParseFiles("views/user.tmpl"))
+	repoTemplate  = template.Must(template.New("repo.tmpl").Funcs(templateFuncs).ParseFiles("views/repo.tmpl"))
+)
+
+func assetPath(name string) string {
+	return filepath.Join("/assets/", name)
+}
+
+func Index(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	if err := indexTemplate.Execute(w, nil); err != nil {
+		log.Printf("%[1]T %[1]v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+}
+
 var listCacheControl = fmt.Sprintf("public, max-age=%d", time.Minute/time.Second)
 
 func User(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -137,38 +158,17 @@ func User(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	htmlUser := html.EscapeString(user)
-
-	fmt.Fprintf(w, "<!doctype html>\n<title>%[1]s</title>\n<h2>%[1]s</h2>\n<ul>\n", htmlUser)
-
-	for _, repo := range repos {
-		var desc string
-
-		if repo.Description != nil {
-			desc = *repo.Description
-		}
-
-		fmt.Fprintf(w, "<li><a href=\"/u/%s/r/%s/\">%s</a>: %s</li>\n", htmlUser, html.EscapeString(*repo.Name), html.EscapeString(*repo.FullName), html.EscapeString(desc))
-	}
-
-	fmt.Fprintf(w, "</ul>")
-
-	if resp.PrevPage != 0 || resp.NextPage != 0 {
-		fmt.Fprintf(w, "\n<p>")
-	}
-
-	if resp.PrevPage == 1 {
-		fmt.Fprintf(w, "<a href=\"/u/%s/\">← Prev page</a>", htmlUser)
-	} else if resp.PrevPage != 0 {
-		fmt.Fprintf(w, "<a href=\"/u/%s/p/%d/\">← Prev page</a>", htmlUser, resp.PrevPage)
-	}
-
-	if resp.PrevPage != 0 && resp.NextPage != 0 {
-		fmt.Fprint(w, " · ")
-	}
-
-	if resp.NextPage != 0 {
-		fmt.Fprintf(w, "<a href=\"/u/%s/p/%d/\">Next page →</a>", htmlUser, resp.NextPage)
+	if err := userTemplate.Execute(w, struct {
+		User  string
+		Repos []github.Repository
+		Resp  *github.Response
+	}{
+		User:  user,
+		Repos: repos,
+		Resp:  resp,
+	}); err != nil {
+		log.Printf("%[1]T %[1]v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }
 
@@ -209,41 +209,19 @@ func Repo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	htmlUser := html.EscapeString(user)
-	htmlRepo := html.EscapeString(repo)
-
-	fmt.Fprintf(w, "<!doctype html>\n<title>%[1]s/%[2]s</title>\n<h2>%[1]s/%[2]s</h2>\n<ul>\n", htmlUser, htmlRepo)
-
-	for _, commit := range commits {
-		var msg string
-
-		if commit.Message != nil {
-			msg = *commit.Message
-		} else if commit.Commit != nil && commit.Commit.Message != nil {
-			msg = *commit.Commit.Message
-		}
-
-		fmt.Fprintf(w, "<li><a href=\"/u/%[1]s/r/%[2]s/c/%[3]s/\">%[1]s/%[2]s@<code>%[3]s</code></a>: %[4]s</li>\n", htmlUser, htmlRepo, *commit.SHA, html.EscapeString(msg))
-	}
-
-	fmt.Fprint(w, "</ul>")
-
-	if resp.PrevPage != 0 || resp.NextPage != 0 {
-		fmt.Fprintf(w, "\n<p>")
-	}
-
-	if resp.PrevPage == 1 {
-		fmt.Fprintf(w, "<a href=\"/u/%s/r/%s/\">← Prev page</a>", htmlUser, htmlRepo)
-	} else if resp.PrevPage != 0 {
-		fmt.Fprintf(w, "<a href=\"/u/%s/r/%s/p/%d/\">← Prev page</a>", htmlUser, htmlRepo, resp.PrevPage)
-	}
-
-	if resp.PrevPage != 0 && resp.NextPage != 0 {
-		fmt.Fprint(w, " · ")
-	}
-
-	if resp.NextPage != 0 {
-		fmt.Fprintf(w, "<a href=\"/u/%s/r/%s/p/%d/\">Next page →</a>", htmlUser, htmlRepo, resp.NextPage)
+	if err := repoTemplate.Execute(w, struct {
+		User    string
+		Repo    string
+		Commits []github.RepositoryCommit
+		Resp    *github.Response
+	}{
+		User:    user,
+		Repo:    repo,
+		Commits: commits,
+		Resp:    resp,
+	}); err != nil {
+		log.Printf("%[1]T %[1]v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
 }
 
@@ -643,12 +621,18 @@ func main() {
 
 	baseRouter.Handler(http.MethodGet, poolOpts.BasePath, httpPool)
 
+	baseRouter.HEAD("/", Index)
+	baseRouter.GET("/", Index)
 	baseRouter.GET("/u/:user/", User)
 	baseRouter.GET("/u/:user/p/:page/", User)
 	baseRouter.GET("/u/:user/r/:repo/", Repo)
 	baseRouter.GET("/u/:user/r/:repo/p/:page/", Repo)
 	baseRouter.GET("/u/:user/r/:repo/c/:commit", Commit)
 	baseRouter.GET("/u/:user/r/:repo/c/:commit/*path", Commit)
+
+	assetsRouter := http.StripPrefix("/assets/", http.FileServer(http.Dir("assets")))
+	baseRouter.Handler(http.MethodHead, "/assets/*path", assetsRouter)
+	baseRouter.Handler(http.MethodGet, "/assets/*path", assetsRouter)
 
 	hs := new(hostSwitch)
 	hs.NotFound = new(repoSwitch)
