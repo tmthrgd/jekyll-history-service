@@ -104,6 +104,7 @@ var (
 		"truncate":   truncate,
 	}
 
+	errorTemplate = template.Must(template.New("error.tmpl").Funcs(templateFuncs).ParseFiles("views/error.tmpl"))
 	indexTemplate = template.Must(template.New("index.tmpl").Funcs(templateFuncs).ParseFiles("views/index.tmpl"))
 	userTemplate  = template.Must(template.New("user.tmpl").Funcs(templateFuncs).ParseFiles("views/user.tmpl"))
 	repoTemplate  = template.Must(template.New("repo.tmpl").Funcs(templateFuncs).ParseFiles("views/repo.tmpl"))
@@ -137,6 +138,137 @@ func truncate(value string, length int) string {
 	}
 
 	return value
+}
+
+type errorResponseWriter struct {
+	http.ResponseWriter
+	Request *http.Request
+
+	wroteHeader bool
+	didWrite    bool
+	skipWrite   bool
+}
+
+func (w *errorResponseWriter) WriteHeader(code int) {
+	w.wroteHeader = true
+
+	if w.didWrite || w.skipWrite {
+		w.ResponseWriter.WriteHeader(code)
+		return
+	}
+
+	var name string
+	var message string
+	var description string
+
+	switch code {
+	case http.StatusBadRequest:
+		name = "Bad Request"
+		message = "Your user agent sent a request that this server could not understand."
+	case http.StatusForbidden:
+		name = "Forbidden"
+		message = "You do not have permission to access this resource."
+	case http.StatusNotFound:
+		name = "File Not Found"
+		message = "The link you followed may be broken, or the page may have been removed."
+	case http.StatusMethodNotAllowed:
+		name = "Method Not Allowed"
+		message = "The specified HTTP method is not allowed for the requested resource."
+		description = fmt.Sprintf("Request method '%s' is not supported for `%s`.", w.Request.Method, w.Request.URL.Path)
+
+		if allow := w.Header().Get("Allow"); len(allow) != 0 {
+			switch verbs := strings.Split(allow, ","); len(verbs) {
+			case 1:
+				allow = strings.TrimSpace(allow)
+			default:
+				for i := range verbs {
+					verbs[i] = strings.TrimSpace(verbs[i])
+				}
+
+				allow = strings.Join(verbs[:len(verbs)-1], ", ") + " and " + verbs[len(verbs)-1]
+			}
+
+			description = fmt.Sprintf("%s Allowed verbs are %s.", description, allow)
+		}
+	case http.StatusInternalServerError:
+		name = "Internal Server Error"
+		message = "An internal server error has occurred."
+	case http.StatusBadGateway:
+		name = "Bad Gateway"
+		message = "The upstream failed or was unreachable."
+	default:
+		w.ResponseWriter.WriteHeader(code)
+		return
+	}
+
+	w.skipWrite = true
+
+	h := w.Header()
+	h.Del("Cache-Control")
+	h.Del("Etag")
+	h.Del("Last-Modified")
+
+	h.Set("Content-Type", "text/html; charset=utf-8")
+	h.Del("Content-Length")
+
+	w.ResponseWriter.WriteHeader(code)
+
+	var padding template.HTML
+	if code >= http.StatusBadRequest {
+		if ua := w.Request.Header.Get("User-Agent"); len(ua) != 0 {
+			if msie := strings.Index(ua, "MSIE "); msie != -1 && msie+7 < len(ua) && !strings.Contains(ua, "Opera") {
+				const msieChromePadding = `
+<!-- a padding to disable MSIE and Chrome friendly error page -->
+<!-- a padding to disable MSIE and Chrome friendly error page -->
+<!-- a padding to disable MSIE and Chrome friendly error page -->
+<!-- a padding to disable MSIE and Chrome friendly error page -->
+<!-- a padding to disable MSIE and Chrome friendly error page -->
+<!-- a padding to disable MSIE and Chrome friendly error page -->`
+				padding = template.HTML(msieChromePadding)
+			}
+		}
+	}
+
+	if err := errorTemplate.Execute(w.ResponseWriter, struct {
+		Code        int
+		Name        string
+		Message     string
+		Description string
+		Padding     template.HTML
+	}{
+		Code:        code,
+		Name:        name,
+		Message:     message,
+		Description: description,
+		Padding:     padding,
+	}); err != nil {
+		log.Printf("%[1]T %[1]v", err)
+		http.Error(w.ResponseWriter, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+}
+
+func (w *errorResponseWriter) Write(p []byte) (int, error) {
+	if !w.wroteHeader {
+		w.WriteHeader(http.StatusOK)
+	}
+
+	if w.skipWrite {
+		return len(p), nil
+	}
+
+	w.didWrite = true
+	return w.ResponseWriter.Write(p)
+}
+
+type errorHandler struct {
+	http.Handler
+}
+
+func (h errorHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.Handler.ServeHTTP(&errorResponseWriter{
+		ResponseWriter: w,
+		Request:        r,
+	}, r)
 }
 
 var (
@@ -706,7 +838,9 @@ func main() {
 		Host: "jekyllhistory.org",
 		Code: http.StatusFound,
 	})
-	hs.Add("jekyllhistory.org", baseRouter)
+	hs.Add("jekyllhistory.org", errorHandler{
+		Handler: baseRouter,
+	})
 
 	hs.Add("www.jekyllhistory.com", hostRedirector{
 		Host: "jekyllhistory.com",

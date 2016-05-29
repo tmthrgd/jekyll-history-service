@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang=en>
+<head>
+	<meta charset=utf-8>
+	<meta name=viewport content="width=device-width,initial-scale=1">
+	<title>{{.Code}}: {{.Name}} · jekyll-history-service</title>
+	<link rel=stylesheet href={{"style.css" | asset_path | html5_attr}}>
+</head>
+<body>
+	<h1>jekyll-history-service</h1>
+	<h2>{{.Code}}: {{.Name}}</h2>
+
+	{{if .Message -}}
+		<p>{{.Message}}</p>
+	{{- end}}
+	{{if .Description -}}
+		<p>{{.Description}}</p>
+	{{- end}}
+</body>
+{{- .Padding}}
