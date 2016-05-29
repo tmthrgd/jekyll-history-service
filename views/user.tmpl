@@ -9,9 +9,26 @@
 	<h1>jekyll-history-service</h1>
 	<h2>{{.User | html}}</h2>
 
-	<ul>{{with $base := .}}{{range .Repos}}
-		<li><a href="/u/{{$base.User | urlquery}}/r/{{.Name | urlquery}}/">{{.FullName | html}}</a>: {{.Description | html}}</li>{{end}}{{end}}
-	</ul>{{if (or (ne .Resp.PrevPage 0) (ne .Resp.NextPage 0))}}
+	<ul>
+	{{- with $base := .}}
+	{{- range .Repos}}
+		<li><a href="/u/{{$base.User | urlquery}}/r/{{.Name | urlquery}}/">{{.FullName | html}}</a>: {{.Description | html}}</li>
+	{{- end}}
+	{{- end}}
+	</ul>
 
-	<p>{{if (eq .Resp.PrevPage 1)}}<a href="/u/{{.User | urlquery}}/">← Prev page</a>{{else if (ne .Resp.PrevPage 0)}}<a href="/u/{{.User | urlquery}}/p/{{.Resp.PrevPage}}/">← Prev page</a>{{end}}{{if (and (ne .Resp.PrevPage 0) (ne .Resp.NextPage 0))}} · {{end}}{{if (ne .Resp.NextPage 0)}}<a href="/u/{{.User | urlquery}}/p/{{.Resp.NextPage}}/">Next page →</a>{{end}}</p>{{end}}
+	{{- if (or (ne .Resp.PrevPage 0) (ne .Resp.NextPage 0))}}
+
+	<p>
+		{{- if (eq .Resp.PrevPage 1) -}}
+			<a href="/u/{{.User | urlquery}}/">← Prev page</a>
+		{{- else if (ne .Resp.PrevPage 0) -}}
+			<a href="/u/{{.User | urlquery}}/p/{{.Resp.PrevPage}}/">← Prev page</a>
+		{{- end -}}
+		{{- if (and (ne .Resp.PrevPage 0) (ne .Resp.NextPage 0))}} · {{end -}}
+		{{- if (ne .Resp.NextPage 0) -}}
+			<a href="/u/{{.User | urlquery}}/p/{{.Resp.NextPage}}/">Next page →</a>
+		{{- end -}}
+	</p>
+	{{- end}}
 </body>
