@@ -2,8 +2,9 @@
 <html lang=en>
 <head>
 	<meta charset=utf-8>
+	<meta name=viewport content="width=device-width,initial-scale=1">
 	<title>jekyll-history-service</title>
-	<link rel=stylesheet href="{{"style.css" | asset_path}}">
+	<link rel=stylesheet href={{"style.css" | asset_path | html5_attr}}>
 </head>
 <body>
 	<h1>jekyll-history-service</h1>

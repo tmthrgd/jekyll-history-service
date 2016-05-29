@@ -15,6 +15,7 @@ import (
 	"flag"
 	"fmt"
 	"hash/crc32"
+	"html"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -99,6 +100,7 @@ func (hs *hostSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 var (
 	templateFuncs = map[string]interface{}{
 		"asset_path": assetPath,
+		"html5_attr": html5Attr,
 	}
 
 	indexTemplate = template.Must(template.New("index.tmpl").Funcs(templateFuncs).ParseFiles("views/index.tmpl"))
@@ -108,6 +110,18 @@ var (
 
 func assetPath(name string) string {
 	return filepath.Join("/assets/", name)
+}
+
+var unquoteableRegexp = regexp.MustCompile("^[^ \t\n\f\r\"'`=<>]+$")
+
+func html5Attr(value string) string {
+	value = html.EscapeString(value)
+
+	if unquoteableRegexp.MatchString(value) {
+		return value
+	}
+
+	return `"` + value + `"`
 }
 
 func Index(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
