@@ -567,6 +567,7 @@ func main() {
 
 	baseRouter.GET("/u/:user/", User)
 	baseRouter.GET("/u/:user/:repo/", Repo)
+	baseRouter.GET("/u/:user/:repo/:commit", Commit)
 	baseRouter.GET("/u/:user/:repo/:commit/*path", Commit)
 
 	hs := new(hostSwitch)
