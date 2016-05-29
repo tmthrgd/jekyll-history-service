@@ -3,17 +3,17 @@
 <head>
 	<meta charset=utf-8>
 	<meta name=viewport content="width=device-width,initial-scale=1">
-	<title>{{.User | html}} · jekyll-history-service</title>
+	<title>{{.User}} · jekyll-history-service</title>
 	<link rel=stylesheet href={{"style.css" | asset_path | html5_attr}}>
 </head>
 <body>
 	<h1>jekyll-history-service</h1>
-	<h2>{{.User | html}}</h2>
+	<h2>{{.User}}</h2>
 
 	<ul>
 	{{- with $base := .}}
 	{{- range .Repos}}
-		<li><a href={{print "/u/" ($base.User | urlquery) "/r/" (.Name | urlquery) "/" | html5_attr}}>{{.Name | html}}</a>: {{.Description | html}}</li>
+		<li><a href={{print "/u/" ($base.User | urlquery) "/r/" (.Name | urlquery) "/" | html5_attr}}>{{.Name}}</a>: {{.Description}}</li>
 	{{- end}}
 	{{- end}}
 	</ul>
