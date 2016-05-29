@@ -509,6 +509,11 @@ func (rs repoSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var dst []byte
 
 	if err := builtFiles.Get(nil, tag+"\x00"+r.URL.Path, groupcache.AllocatingByteSliceSink(&dst)); err != nil {
+		if nf, ok := err.(notFoundError); ok {
+			http.ServeContent(w, r, r.URL.Path, timeZero, bytes.NewReader([]byte(nf)))
+			return
+		}
+
 		h.Del("Cache-Control")
 		h.Del("Etag")
 
@@ -535,6 +540,12 @@ type httpError struct {
 
 func (h httpError) Error() string {
 	return h.Err.Error()
+}
+
+type notFoundError []byte
+
+func (notFoundError) Error() string {
+	return os.ErrNotExist.Error()
 }
 
 type buildFileGetter struct {
@@ -664,7 +675,7 @@ type builtFileGetter struct {
 	SiteBasePath string
 }
 
-func (bf builtFileGetter) Get(_ groupcache.Context, key string, dest groupcache.Sink) error {
+func (bf builtFileGetter) Get(ctx groupcache.Context, key string, dest groupcache.Sink) error {
 	parts := strings.Split(key, "\x00")
 	if len(parts) != 2 {
 		return &httpError{errors.New("invalid key"), http.StatusBadRequest}
@@ -676,6 +687,10 @@ func (bf builtFileGetter) Get(_ groupcache.Context, key string, dest groupcache.
 
 	f, err := dir.Open(file)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return bf.TryFind404(ctx, tag, dir, dest)
+		}
+
 		return err
 	}
 
@@ -694,6 +709,10 @@ func (bf builtFileGetter) Get(_ groupcache.Context, key string, dest groupcache.
 		f.Close()
 
 		if f, err = dir.Open(strings.TrimSuffix(file, "/") + "/index.html"); err != nil {
+			if os.IsNotExist(err) {
+				return bf.TryFind404(ctx, tag, dir, dest)
+			}
+
 			return err
 		}
 	}
@@ -707,6 +726,34 @@ func (bf builtFileGetter) Get(_ groupcache.Context, key string, dest groupcache.
 	}
 
 	return dest.SetBytes(b)
+}
+
+func (bf builtFileGetter) TryFind404(_ groupcache.Context, tag string, dir http.Dir, dest groupcache.Sink) error {
+	f, err := dir.Open("/404.html")
+	if err != nil {
+		return err
+	}
+
+	stat, err := f.Stat()
+	if err != nil {
+		f.Close()
+		return err
+	}
+
+	if stat.Mode()&(os.ModeDir|os.ModeSymlink|os.ModeNamedPipe|os.ModeSocket|os.ModeDevice) != 0 {
+		f.Close()
+		return errors.New("not a regular file")
+	}
+
+	b, err := ioutil.ReadAll(f)
+
+	f.Close()
+
+	if err != nil {
+		return err
+	}
+
+	return notFoundError(b)
 }
 
 type debugLoggerSnapshot struct {
