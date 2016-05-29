@@ -139,8 +139,30 @@ func truncate(value string, length int) string {
 	return value
 }
 
+var (
+	indexCacheControl = fmt.Sprintf("public, max-age=%d", (10*time.Minute)/time.Second)
+
+	indexModTime time.Time
+)
+
+func init() {
+	if stat, err := os.Stat("views/index.tmpl"); err == nil {
+		indexModTime = stat.ModTime()
+	} else {
+		panic(err)
+	}
+}
+
 func Index(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	w.Header().Set("Cache-Control", indexCacheControl)
+
+	if checkLastModified(w, r, indexModTime, 10*time.Minute) {
+		return
+	}
+
 	if err := indexTemplate.Execute(w, nil); err != nil {
+		w.Header().Del("Cache-Control")
+
 		log.Printf("%[1]T %[1]v", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
