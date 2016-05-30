@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/golang/groupcache"
 	"github.com/google/go-github/github"
@@ -151,6 +152,18 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 			if err != nil {
 				resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
 				return dest.SetProto(&resp)
+			}
+
+			if !header.ModTime.IsZero() && !header.ModTime.Equal(unixEpochTime) {
+				access := header.AccessTime
+
+				if access.IsZero() || access.Equal(unixEpochTime) {
+					access = time.Now()
+				}
+
+				if err := os.Chtimes(path, access, header.ModTime); err != nil {
+					log.Printf("%[1]T: %[1]v", err)
+				}
 			}
 		}
 	}
