@@ -975,17 +975,14 @@ func main() {
 
 	clientTr := httpcache.NewMemoryCacheTransport()
 
-	if id := os.Getenv("GITHUB_CLIENT_ID"); len(id) != 0 {
-		if secret := os.Getenv("GITHUB_CLIENT_SECRET"); len(secret) != 0 {
-			clientTr.Transport = &unathTransport{
-				ID:     id,
-				Secret: secret,
-			}
-		} else {
-			panic("GITHUB_CLIENT_SECRET must be set")
+	id := os.Getenv("GITHUB_CLIENT_ID")
+	if secret := os.Getenv("GITHUB_CLIENT_SECRET"); len(id) != 0 && len(secret) != 0 {
+		clientTr.Transport = &unathTransport{
+			ID:     id,
+			Secret: secret,
 		}
-	} else if len(os.Getenv("GITHUB_CLIENT_SECRET")) != 0 {
-		panic("GITHUB_CLIENT_ID must be set")
+	} else if len(id) != 0 || len(secret) != 0 {
+		panic("both GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET must be set")
 	}
 
 	client = github.NewClient(clientTr.Client())
