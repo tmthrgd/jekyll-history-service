@@ -4,7 +4,6 @@ document.addEventListener("DOMContentLoaded", function () {
 	var permalinkSpan = document.querySelector(".permalink");
 
 	var permalink = document.createElement("a");
-	permalink.classList.add("permalink");
 	permalink.href = permalinkSpan.textContent || permalinkSpan.innerText;
 	permalink.innerHTML = permalinkSpan.innerHTML;
 
