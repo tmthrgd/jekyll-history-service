@@ -71,8 +71,12 @@ pre {
 	margin-bottom: 0;
 }
 
-.file-diff pre {
+.file-diff pre, .file-status {
 	margin-top: 0;
+}
+
+.file-status {
+	padding-left: 0.5em;
 }
 
 .site-header h1 a {

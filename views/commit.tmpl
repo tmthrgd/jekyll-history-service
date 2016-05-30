@@ -26,7 +26,11 @@
 		<div class=file-diff>
 			<h3>{{.Filename}}</h3>
 
-			<pre><code class=language-diff>{{.Patch}}</code></pre>
+			{{if .Patch -}}
+				<pre><code class=language-diff>{{.Patch}}</code></pre>
+			{{- else -}}
+				<p class=file-status><i>{{.Status}}</i></p>
+			{{- end}}
 		</div>
 		{{- end}}
 
