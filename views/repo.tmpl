@@ -11,11 +11,9 @@
 	<h2><a href={{print "/u/" (.User | urlquery) "/" | html5_attr}}>{{.User}}</a>/{{.Repo}}</h2>
 
 	<ul>
-	{{- with $base := .}}
 	{{- range .Commits}}
-		<li><a href={{print "/u/" ($base.User | urlquery) "/r/" ($base.Repo | urlquery) "/c/" (.SHA | urlquery) "/" | html5_attr}}><code>{{html (truncate .SHA 10)}}</code></a>:
+		<li><a href={{print "/u/" ($.User | urlquery) "/r/" ($.Repo | urlquery) "/c/" (.SHA | urlquery) "/" | html5_attr}}><code>{{html (truncate .SHA 10)}}</code></a>:
 			{{- if .Commit}} {{.Commit.Message}}{{end}} <a href={{.HTMLURL | html5_attr}}>⤴</a></li>
-	{{- end}}
 	{{- end}}
 	</ul>
 

@@ -11,10 +11,8 @@
 	<h2>{{.User}}</h2>
 
 	<ul>
-	{{- with $base := .}}
 	{{- range .Repos}}
-		<li><a href={{print "/u/" ($base.User | urlquery) "/r/" (.Name | urlquery) "/" | html5_attr}}>{{.Name}}</a>: {{.Description}} <a href={{.HTMLURL | html5_attr}}>⤴</a></li>
-	{{- end}}
+		<li><a href={{print "/u/" ($.User | urlquery) "/r/" (.Name | urlquery) "/" | html5_attr}}>{{.Name}}</a>: {{.Description}} <a href={{.HTMLURL | html5_attr}}>⤴</a></li>
 	{{- end}}
 	</ul>
 
