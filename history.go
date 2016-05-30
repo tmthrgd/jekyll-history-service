@@ -887,9 +887,13 @@ func main() {
 	baseRouter.GET("/u/:user/r/:repo/c/:commit", Commit)
 	baseRouter.GET("/u/:user/r/:repo/c/:commit/*path", Commit)
 
-	assetsRouter := http.StripPrefix("/assets/", http.FileServer(http.Dir("assets")))
-	baseRouter.Handler(http.MethodHead, "/assets/*path", assetsRouter)
-	baseRouter.Handler(http.MethodGet, "/assets/*path", assetsRouter)
+	assetsRouter := http.FileServer(http.Dir("assets"))
+	baseRouter.Handler(http.MethodHead, "/favicon.ico", assetsRouter)
+	baseRouter.Handler(http.MethodGet, "/favicon.ico", assetsRouter)
+	baseRouter.Handler(http.MethodHead, "/robots.txt", assetsRouter)
+	baseRouter.Handler(http.MethodGet, "/robots.txt", assetsRouter)
+	baseRouter.Handler(http.MethodHead, "/assets/*path", http.StripPrefix("/assets/", assetsRouter))
+	baseRouter.Handler(http.MethodGet, "/assets/*path", http.StripPrefix("/assets/", assetsRouter))
 
 	hs := new(hostSwitch)
 	hs.NotFound = new(repoSwitch)
