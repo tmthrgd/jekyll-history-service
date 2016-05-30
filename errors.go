@@ -11,6 +11,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -81,8 +82,6 @@ func (w *errorResponseWriter) WriteHeader(code int) {
 	h.Del("Cache-Control")
 	h.Del("Etag")
 	h.Del("Last-Modified")
-
-	h.Set("Content-Type", "text/html; charset=utf-8")
 	h.Del("Content-Length")
 
 	var padding template.HTML
@@ -123,6 +122,9 @@ func (w *errorResponseWriter) WriteHeader(code int) {
 		http.Error(w.ResponseWriter, http.StatusText(code), code)
 		return
 	}
+
+	h.Set("Content-Length", strconv.FormatInt(int64(buf.Len()), 10))
+	h.Set("Content-Type", "text/html; charset=utf-8")
 
 	w.ResponseWriter.WriteHeader(code)
 

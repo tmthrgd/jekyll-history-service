@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/google/go-github/github"
@@ -20,7 +21,8 @@ func getRepoHandler(githubClient *github.Client) func(w http.ResponseWriter, r *
 	var cacheControl = fmt.Sprintf("public, max-age=%d", time.Minute/time.Second)
 
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		w.Header().Set("Cache-Control", cacheControl)
+		h := w.Header()
+		h.Set("Cache-Control", cacheControl)
 
 		if checkLastModified(w, r, time.Now(), time.Minute) {
 			return
@@ -28,7 +30,7 @@ func getRepoHandler(githubClient *github.Client) func(w http.ResponseWriter, r *
 
 		page, redirect, err := parsePageString(ps.ByName("page"))
 		if err != nil {
-			w.Header().Del("Cache-Control")
+			h.Del("Cache-Control")
 
 			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 			return
@@ -49,7 +51,7 @@ func getRepoHandler(githubClient *github.Client) func(w http.ResponseWriter, r *
 			},
 		})
 		if err != nil {
-			w.Header().Del("Cache-Control")
+			h.Del("Cache-Control")
 
 			log.Printf("%[1]T %[1]v", err)
 			http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
@@ -77,12 +79,15 @@ func getRepoHandler(githubClient *github.Client) func(w http.ResponseWriter, r *
 			Commits: commits,
 			Resp:    resp,
 		}); err != nil {
-			w.Header().Del("Cache-Control")
+			h.Del("Cache-Control")
 
 			log.Printf("%[1]T %[1]v", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
 		}
+
+		h.Set("Content-Length", strconv.FormatInt(int64(buf.Len()), 10))
+		h.Set("Content-Type", "text/html; charset=utf-8")
 
 		if _, err := buf.WriteTo(w); err != nil {
 			log.Printf("%[1]T %[1]v", err)
