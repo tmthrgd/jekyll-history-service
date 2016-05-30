@@ -307,7 +307,7 @@ func Index(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 }
 
-var githubURLRegex = regexp.MustCompile(`^(?:https?://)?github.com/([^/]+)(?:/([^/]+)(?:/commit/([a-fA-F0-9]+))?)?/?$`)
+var githubURLRegex = regexp.MustCompile(`^(?:https?://)?github.com/([^/]+)(?:/([^/]+)(?:/commit/([a-fA-F0-9]+)|/tree/([^/]+))?)?/?$`)
 
 func Goto(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Header().Set("Cache-Control", "max-age=0")
@@ -325,6 +325,8 @@ func Goto(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		switch {
 		case m == nil:
 			newURL.Path = "/"
+		case len(m[4]) != 0:
+			newURL.Path = "/u/" + url.QueryEscape(m[1]) + "/r/" + url.QueryEscape(m[2]) + "/t/" + url.QueryEscape(m[4]) + "/"
 		case len(m[3]) != 0:
 			newURL.Path = "/u/" + url.QueryEscape(m[1]) + "/r/" + url.QueryEscape(m[2]) + "/c/" + url.QueryEscape(m[3]) + "/"
 		case len(m[2]) != 0:
