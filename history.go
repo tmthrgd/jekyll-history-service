@@ -45,6 +45,14 @@ var (
 	fullVersionStr string
 )
 
+func init() {
+	if len(version) != 0 {
+		fullVersionStr = fmt.Sprintf("jekyll-history-service (%s)", version)
+	} else {
+		fullVersionStr = "jekyll-history-service"
+	}
+}
+
 type hostRedirector struct {
 	Host string
 	Code int
@@ -914,17 +922,6 @@ var (
 	builtFiles *groupcache.Group
 )
 
-func init() {
-	if len(version) != 0 {
-		fullVersionStr = fmt.Sprintf("jekyll-history-service (%s)", version)
-	} else {
-		fullVersionStr = "jekyll-history-service"
-	}
-
-	client = github.NewClient(httpcache.NewMemoryCacheTransport().Client())
-	client.UserAgent = fullVersionStr
-}
-
 func main() {
 	flag.BoolVar(&debug, "debug", false, "do not delete temporary files")
 	flag.StringVar(&highlightStyle, "highlight-style", "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/styles/github-gist.min.css", "the highlight.js stylesheet")
@@ -953,6 +950,9 @@ func main() {
 	} else {
 		defer os.RemoveAll(dest)
 	}
+
+	client = github.NewClient(httpcache.NewMemoryCacheTransport().Client())
+	client.UserAgent = fullVersionStr
 
 	buildFiles = groupcache.NewGroup("build-file", 1<<20, buildFileGetter{
 		RepoBasePath: tmp,
