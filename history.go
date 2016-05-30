@@ -309,7 +309,7 @@ func init() {
 func Index(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Header().Set("Cache-Control", indexCacheControl)
 
-	if checkLastModified(w, r, indexModTime, 10*time.Minute) {
+	if checkLastModified(w, r, indexModTime, 0) {
 		return
 	}
 
