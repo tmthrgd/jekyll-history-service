@@ -6,6 +6,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net/http"
@@ -23,10 +24,18 @@ func indexHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 		return
 	}
 
-	if err := indexTemplate.Execute(w, nil); err != nil {
+	buf := bufferPool.Get().(*bytes.Buffer)
+	defer bufferPool.Put(buf)
+	buf.Reset()
+
+	if err := indexTemplate.Execute(buf, nil); err != nil {
 		w.Header().Del("Cache-Control")
 
 		log.Printf("%[1]T %[1]v", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+
+	if _, err := buf.WriteTo(w); err != nil {
+		log.Printf("%[1]T %[1]v", err)
 	}
 }

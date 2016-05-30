@@ -6,6 +6,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net/http"
@@ -59,7 +60,11 @@ func getUserHandler(githubClient *github.Client) func(w http.ResponseWriter, r *
 			log.Printf("GitHub API Rate Limit is %d remaining of %d, to be reset at %s\n", resp.Remaining, resp.Limit, resp.Reset)
 		}
 
-		if err := userTemplate.Execute(w, struct {
+		buf := bufferPool.Get().(*bytes.Buffer)
+		defer bufferPool.Put(buf)
+		buf.Reset()
+
+		if err := userTemplate.Execute(buf, struct {
 			User  string
 			Repos []github.Repository
 			Resp  *github.Response
@@ -72,6 +77,10 @@ func getUserHandler(githubClient *github.Client) func(w http.ResponseWriter, r *
 
 			log.Printf("%[1]T %[1]v", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+
+		if _, err := buf.WriteTo(w); err != nil {
+			log.Printf("%[1]T %[1]v", err)
 		}
 	}
 }

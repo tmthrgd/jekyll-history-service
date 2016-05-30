@@ -6,6 +6,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"log"
@@ -102,7 +103,11 @@ func (w *errorResponseWriter) WriteHeader(code int) {
 		}
 	}
 
-	if err := errorTemplate.Execute(w.ResponseWriter, struct {
+	buf := bufferPool.Get().(*bytes.Buffer)
+	defer bufferPool.Put(buf)
+	buf.Reset()
+
+	if err := errorTemplate.Execute(buf, struct {
 		Code        int
 		Name        string
 		Message     string
@@ -117,6 +122,10 @@ func (w *errorResponseWriter) WriteHeader(code int) {
 	}); err != nil {
 		log.Printf("%[1]T %[1]v", err)
 		http.Error(w.ResponseWriter, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+
+	if _, err := buf.WriteTo(w.ResponseWriter); err != nil {
+		log.Printf("%[1]T %[1]v", err)
 	}
 }
 

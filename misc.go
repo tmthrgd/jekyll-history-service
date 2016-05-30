@@ -6,9 +6,17 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
+	"sync"
 )
+
+var bufferPool = &sync.Pool{
+	New: func() interface{} {
+		return new(bytes.Buffer)
+	},
+}
 
 func parsePageString(page string) (int, bool, error) {
 	if len(page) == 0 {
