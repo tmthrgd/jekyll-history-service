@@ -72,6 +72,15 @@ pre {
 	margin-top: 0;
 }
 
+.site-header h1 a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.site-header h1 a:active, .site-header h1 a:focus, .site-header h1 a:hover {
+	text-decoration: underline;
+}
+
 hr, .site-footer {
 	width: 90%;
 

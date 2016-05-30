@@ -8,8 +8,8 @@
 	<link rel=stylesheet href={{.HighlightStyle | asset_path | html5_attr}}>
 </head>
 <body>
-	<header>
-		<h1>jekyll-history-service</h1>
+	<header class=site-header>
+		<h1><a href=/>jekyll-history-service</a></h1>
 		<h2><a href={{print "/u/" (.User | urlquery) "/" | html5_attr}}>{{.User}}</a>/<a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/" | html5_attr}}>{{.Repo}}</a>@<code>{{truncate .Commit.SHA 10}}</code> <a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/c/" (.Commit.SHA | urlquery) "/b/" | html5_attr}} title="Build Jekyll at this commit">⇝</a>
 		{{- if (ne (len .Commit.Parents) 0)}} <a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/c/" ((index .Commit.Parents 0).SHA | urlquery) "/" | html5_attr}} title=Parent>↑</a>
 		{{- end}} <a href={{.Commit.HTMLURL | html5_attr}} title="View on GitHub">⤴</a></h2>

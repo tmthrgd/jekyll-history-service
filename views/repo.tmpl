@@ -7,8 +7,8 @@
 	<link rel=stylesheet href={{"style.css" | asset_path | html5_attr}}>
 </head>
 <body>
-	<header>
-		<h1>jekyll-history-service</h1>
+	<header class=site-header>
+		<h1><a href=/>jekyll-history-service</a></h1>
 		<h2><a href={{print "/u/" (.User | urlquery) "/" | html5_attr}}>{{.User}}</a>
 			{{- if .Tree -}}
 				/<a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/" | html5_attr}}>{{.Repo}}</a>/{{.Tree}} <a href={{print "https://github.com/" (.User | urlquery) "/" (.Repo | urlquery) "/tree/" (.Tree | urlquery) | html5_attr}} title="View on GitHub">⤴</a>
