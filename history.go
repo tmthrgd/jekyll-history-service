@@ -909,13 +909,17 @@ func main() {
 		Host: "jekyllhistory.org",
 	})
 
-	var router http.Handler
+	var router http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Server", "jekyll-history-service")
+		hs.ServeHTTP(w, r)
+	})
 
 	if debug {
-		router = weblogs.HandlerWithOptions(hs, &weblogs.Options{
+		router = weblogs.HandlerWithOptions(router, &weblogs.Options{
 			Logger: debugLogger{},
 		})
 	} else {
+		router2 := router
 		router = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if err := recover(); err != nil {
@@ -929,7 +933,7 @@ func main() {
 				}
 			}()
 
-			hs.ServeHTTP(w, r)
+			router2.ServeHTTP(w, r)
 		})
 	}
 
