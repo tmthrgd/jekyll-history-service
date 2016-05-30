@@ -7,15 +7,19 @@
 	<link rel=stylesheet href={{"style.css" | asset_path | html5_attr}}>
 </head>
 <body>
-	<h1>jekyll-history-service</h1>
-	<h2>{{.Code}}: {{.Name}}</h2>
+	<header>
+		<h1>jekyll-history-service</h1>
+		<h2>{{.Code}}: {{.Name}}</h2>
+	</header>
 
-	{{if .Message -}}
-		<p>{{.Message}}</p>
-	{{- end}}
-	{{if .Description -}}
-		<p>{{.Description}}</p>
-	{{- end}}
+	<main>
+		{{if .Message -}}
+			<p>{{.Message}}</p>
+		{{- end}}
+		{{if .Description -}}
+			<p>{{.Description}}</p>
+		{{- end}}
+	</main>
 </body>
 {{- .Padding}}
 {{- /* -*- mode: html;-*- */ -}}

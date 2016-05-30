@@ -7,28 +7,34 @@
 	<link rel=stylesheet href={{"style.css" | asset_path | html5_attr}}>
 </head>
 <body>
-	<h1>jekyll-history-service</h1>
-	<h2>{{.User}} <a href={{print "https://github.com/" (.User | urlquery) | html5_attr}} title="View on GitHub">⤴</a></h2>
+	<header>
+		<h1>jekyll-history-service</h1>
+		<h2>{{.User}} <a href={{print "https://github.com/" (.User | urlquery) | html5_attr}} title="View on GitHub">⤴</a></h2>
+	</header>
 
-	<ul>
-	{{- range .Repos}}
-		<li><a href={{print "/u/" ($.User | urlquery) "/r/" (.Name | urlquery) "/" | html5_attr}}>{{.Name}}</a>: {{.Description}} <a href={{.HTMLURL | html5_attr}} title="View on GitHub">⤴</a></li>
-	{{- end}}
-	</ul>
+	<main>
+		<ul>
+		{{- range .Repos}}
+			<li><a href={{print "/u/" ($.User | urlquery) "/r/" (.Name | urlquery) "/" | html5_attr}}>{{.Name}}</a>: {{.Description}} <a href={{.HTMLURL | html5_attr}} title="View on GitHub">⤴</a></li>
+		{{- end}}
+		</ul>
 
-	{{- if (or (ne .Resp.PrevPage 0) (ne .Resp.NextPage 0))}}
+		{{- if (or (ne .Resp.PrevPage 0) (ne .Resp.NextPage 0))}}
 
-	<p>
-		{{- if (eq .Resp.PrevPage 1) -}}
-			<a href={{print "/u/" (.User | urlquery) "/" | html5_attr}}>← Prev page</a>
-		{{- else if (ne .Resp.PrevPage 0) -}}
-			<a href={{print "/u/" (.User | urlquery) "/p/" .Resp.PrevPage | html5_attr "/"}}>← Prev page</a>
-		{{- end -}}
-		{{- if (and (ne .Resp.PrevPage 0) (ne .Resp.NextPage 0))}} · {{end -}}
-		{{- if (ne .Resp.NextPage 0) -}}
-			<a href={{print "/u/" (.User | urlquery) "/p/" .Resp.NextPage "/" | html5_attr}}>Next page →</a>
-		{{- end -}}
-	</p>
-	{{- end}}
+		<footer>
+			<p>
+				{{- if (eq .Resp.PrevPage 1) -}}
+					<a href={{print "/u/" (.User | urlquery) "/" | html5_attr}}>← Prev page</a>
+				{{- else if (ne .Resp.PrevPage 0) -}}
+					<a href={{print "/u/" (.User | urlquery) "/p/" .Resp.PrevPage | html5_attr "/"}}>← Prev page</a>
+				{{- end -}}
+				{{- if (and (ne .Resp.PrevPage 0) (ne .Resp.NextPage 0))}} · {{end -}}
+				{{- if (ne .Resp.NextPage 0) -}}
+					<a href={{print "/u/" (.User | urlquery) "/p/" .Resp.NextPage "/" | html5_attr}}>Next page →</a>
+				{{- end -}}
+			</p>
+			{{- end}}
+		</footer>
+	</main>
 </body>
 {{- /* -*- mode: html;-*- */ -}}
