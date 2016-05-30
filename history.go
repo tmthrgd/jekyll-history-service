@@ -32,6 +32,7 @@ import (
 
 	"github.com/golang/groupcache"
 	"github.com/google/go-github/github"
+	"github.com/gregjones/httpcache"
 	"github.com/julienschmidt/httprouter"
 	"github.com/keep94/weblogs"
 	"github.com/keep94/weblogs/loggers"
@@ -817,7 +818,7 @@ var (
 )
 
 func init() {
-	client = github.NewClient(nil)
+	client = github.NewClient(httpcache.NewMemoryCacheTransport().Client())
 }
 
 func main() {
