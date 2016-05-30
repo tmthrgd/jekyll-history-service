@@ -21,7 +21,8 @@
 			<p class=commit-author><a href={{.Commit.Author.HTMLURL | html5_attr}}>{{.Commit.Commit.Author.Name}}</a></p>
 		</header>
 
-		{{range .Commit.Files}}
+		{{- range .Commit.Files}}
+
 		<div class=file-diff>
 			<h3>{{.Filename}}</h3>
 
