@@ -6,7 +6,6 @@
 package main
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -14,7 +13,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/golang/groupcache"
@@ -48,11 +46,7 @@ func getCommitHandler(githubClient *github.Client, highlightStyle string) func(w
 			log.Printf("GitHub API Rate Limit is %d remaining of %d, to be reset at %s\n", resp.Remaining, resp.Limit, resp.Reset)
 		}
 
-		buf := bufferPool.Get().(*bytes.Buffer)
-		defer bufferPool.Put(buf)
-		buf.Reset()
-
-		if err := commitTemplate.Execute(buf, struct {
+		if wrote, err := executeTemplate(commitTemplate, struct {
 			User   string
 			Repo   string
 			Commit *github.RepositoryCommit
@@ -64,19 +58,13 @@ func getCommitHandler(githubClient *github.Client, highlightStyle string) func(w
 			Commit: repoCommit,
 
 			HighlightStyle: highlightStyle,
-		}); err != nil {
-			h.Del("Cache-Control")
-
+		}, w); err != nil {
 			log.Printf("%[1]T %[1]v", err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			return
-		}
 
-		h.Set("Content-Length", strconv.FormatInt(int64(buf.Len()), 10))
-		h.Set("Content-Type", "text/html; charset=utf-8")
-
-		if _, err := buf.WriteTo(w); err != nil {
-			log.Printf("%[1]T %[1]v", err)
+			if !wrote {
+				h.Del("Cache-Control")
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
 		}
 	}
 }

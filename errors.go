@@ -6,12 +6,10 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 )
 
@@ -83,6 +81,7 @@ func (w *errorResponseWriter) WriteHeader(code int) {
 	h.Del("Etag")
 	h.Del("Last-Modified")
 	h.Del("Content-Length")
+	h.Del("Content-Type")
 
 	var padding template.HTML
 	if code >= http.StatusBadRequest {
@@ -100,11 +99,7 @@ func (w *errorResponseWriter) WriteHeader(code int) {
 		}
 	}
 
-	buf := bufferPool.Get().(*bytes.Buffer)
-	defer bufferPool.Put(buf)
-	buf.Reset()
-
-	if err := errorTemplate.Execute(buf, struct {
+	if wrote, err := executeTemplateWithCode(errorTemplate, struct {
 		Code        int
 		Name        string
 		Message     string
@@ -116,20 +111,12 @@ func (w *errorResponseWriter) WriteHeader(code int) {
 		Message:     message,
 		Description: description,
 		Padding:     padding,
-	}); err != nil {
+	}, w.ResponseWriter, code); err != nil {
 		log.Printf("%[1]T %[1]v", err)
 
-		http.Error(w.ResponseWriter, http.StatusText(code), code)
-		return
-	}
-
-	h.Set("Content-Length", strconv.FormatInt(int64(buf.Len()), 10))
-	h.Set("Content-Type", "text/html; charset=utf-8")
-
-	w.ResponseWriter.WriteHeader(code)
-
-	if _, err := buf.WriteTo(w.ResponseWriter); err != nil {
-		log.Printf("%[1]T %[1]v", err)
+		if !wrote {
+			http.Error(w.ResponseWriter, http.StatusText(code), code)
+		}
 	}
 }
 
