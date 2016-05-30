@@ -429,9 +429,11 @@ func Repo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		}
 	}
 
-	user, repo := ps.ByName("user"), ps.ByName("repo")
+	user, repo, tree := ps.ByName("user"), ps.ByName("repo"), ps.ByName("tree")
 
 	commits, resp, err := client.Repositories.ListCommits(user, repo, &github.CommitsListOptions{
+		SHA: tree,
+
 		ListOptions: github.ListOptions{
 			Page: page,
 
@@ -453,11 +455,13 @@ func Repo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if err := repoTemplate.Execute(w, struct {
 		User    string
 		Repo    string
+		Tree    string
 		Commits []github.RepositoryCommit
 		Resp    *github.Response
 	}{
 		User:    user,
 		Repo:    repo,
+		Tree:    tree,
 		Commits: commits,
 		Resp:    resp,
 	}); err != nil {
@@ -968,6 +972,8 @@ func main() {
 	baseRouter.GET("/u/:user/p/:page/", User)
 	baseRouter.GET("/u/:user/r/:repo/", Repo)
 	baseRouter.GET("/u/:user/r/:repo/p/:page/", Repo)
+	baseRouter.GET("/u/:user/r/:repo/t/:tree/", Repo)
+	baseRouter.GET("/u/:user/r/:repo/t/:tree/p/:page/", Repo)
 	baseRouter.GET("/u/:user/r/:repo/c/:commit/", Commit)
 	baseRouter.GET("/u/:user/r/:repo/c/:commit/b", BuildCommit)
 	baseRouter.GET("/u/:user/r/:repo/c/:commit/b/*path", BuildCommit)

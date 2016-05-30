@@ -3,12 +3,18 @@
 <head>
 	<meta charset=utf-8>
 	<meta name=viewport content="width=device-width,initial-scale=1">
-	<title>{{.User}}/{{.Repo}} · jekyll-history-service</title>
+	<title>{{.User}}/{{.Repo}}{{if .Tree -}}/{{.Tree}}{{end}} · jekyll-history-service</title>
 	<link rel=stylesheet href={{"style.css" | asset_path | html5_attr}}>
 </head>
 <body>
 	<h1>jekyll-history-service</h1>
-	<h2><a href={{print "/u/" (.User | urlquery) "/" | html5_attr}}>{{.User}}</a>/{{.Repo}} <a href={{print "https://github.com/" (.User | urlquery) "/" (.Repo | urlquery) | html5_attr}} title="View on GitHub">⤴</a></h2>
+	<h2><a href={{print "/u/" (.User | urlquery) "/" | html5_attr}}>{{.User}}</a>
+		{{- if .Tree -}}
+			/<a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/" | html5_attr}}>{{.Repo}}</a>/{{.Tree}} <a href={{print "https://github.com/" (.User | urlquery) "/" (.Repo | urlquery) "/tree/" (.Tree | urlquery) | html5_attr}} title="View on GitHub">⤴</a>
+		{{- else -}}
+			/{{.Repo}} <a href={{print "https://github.com/" (.User | urlquery) "/" (.Repo | urlquery) | html5_attr}} title="View on GitHub">⤴</a>
+		{{- end -}}
+	</h2>
 
 	<ul>
 	{{- range .Commits}}
@@ -20,6 +26,17 @@
 	{{- if (or (ne .Resp.PrevPage 0) (ne .Resp.NextPage 0))}}
 
 	<p>
+{{- if .Tree -}}
+		{{- if (eq .Resp.PrevPage 1) -}}
+			<a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/t/" (.Tree | urlquery) "/" | html5_attr}}>← Prev page</a>
+		{{- else if (ne .Resp.PrevPage 0) -}}
+			<a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/t/" (.Tree | urlquery) "/p/" .Resp.PrevPage "/" | html5_attr}}>← Prev page</a>
+		{{- end -}}
+		{{- if (and (ne .Resp.PrevPage 0) (ne .Resp.NextPage 0))}} · {{end -}}
+		{{- if (ne .Resp.NextPage 0) -}}
+			<a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/t/" (.Tree | urlquery) "/p/" .Resp.NextPage "/" | html5_attr}}>Next page →</a>
+		{{- end -}}
+{{- else -}}
 		{{- if (eq .Resp.PrevPage 1) -}}
 			<a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/" | html5_attr}}>← Prev page</a>
 		{{- else if (ne .Resp.PrevPage 0) -}}
@@ -29,6 +46,7 @@
 		{{- if (ne .Resp.NextPage 0) -}}
 			<a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/p/" .Resp.NextPage "/" | html5_attr}}>Next page →</a>
 		{{- end -}}
+{{- end -}}
 	</p>
 	{{- end}}
 </body>
