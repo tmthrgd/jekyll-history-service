@@ -33,6 +33,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) 
 
 		log.Printf("%[1]T %[1]v", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
 	}
 
 	if _, err := buf.WriteTo(w); err != nil {

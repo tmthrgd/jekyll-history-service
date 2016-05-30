@@ -81,6 +81,7 @@ func getRepoHandler(githubClient *github.Client) func(w http.ResponseWriter, r *
 
 			log.Printf("%[1]T %[1]v", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
 		}
 
 		if _, err := buf.WriteTo(w); err != nil {
