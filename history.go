@@ -918,23 +918,6 @@ func main() {
 		router = weblogs.HandlerWithOptions(router, &weblogs.Options{
 			Logger: debugLogger{},
 		})
-	} else {
-		router2 := router
-		router = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			defer func() {
-				if err := recover(); err != nil {
-					if er := err.(error); er != nil {
-						log.Printf("%[1]T %[1]v", er)
-					} else {
-						log.Printf("unkown panic: %v", err)
-					}
-
-					http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-				}
-			}()
-
-			router2.ServeHTTP(w, r)
-		})
 	}
 
 	fmt.Println("Listening on :8080")
