@@ -85,8 +85,6 @@ func (w *errorResponseWriter) WriteHeader(code int) {
 	h.Set("Content-Type", "text/html; charset=utf-8")
 	h.Del("Content-Length")
 
-	w.ResponseWriter.WriteHeader(code)
-
 	var padding template.HTML
 	if code >= http.StatusBadRequest {
 		if ua := w.Request.Header.Get("User-Agent"); len(ua) != 0 {
@@ -121,8 +119,12 @@ func (w *errorResponseWriter) WriteHeader(code int) {
 		Padding:     padding,
 	}); err != nil {
 		log.Printf("%[1]T %[1]v", err)
-		http.Error(w.ResponseWriter, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+
+		http.Error(w.ResponseWriter, http.StatusText(code), code)
+		return
 	}
+
+	w.ResponseWriter.WriteHeader(code)
 
 	if _, err := buf.WriteTo(w.ResponseWriter); err != nil {
 		log.Printf("%[1]T %[1]v", err)
