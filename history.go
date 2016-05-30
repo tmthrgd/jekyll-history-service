@@ -39,6 +39,8 @@ import (
 	"github.com/keep94/weblogs/loggers"
 )
 
+var version string
+
 type hostRedirector struct {
 	Host string
 	Code int
@@ -910,9 +912,18 @@ func init() {
 }
 
 func main() {
+	var fullVersionStr string
+	if len(version) != 0 {
+		fullVersionStr = fmt.Sprintf("jekyll-history-service (%s)", version)
+	} else {
+		fullVersionStr = "jekyll-history-service"
+	}
+
 	flag.BoolVar(&debug, "debug", false, "do not delete temporary files")
 	flag.StringVar(&highlightStyle, "highlight-style", "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/styles/github-gist.min.css", "the highlight.js stylesheet")
 	flag.Parse()
+
+	fmt.Println(fullVersionStr)
 
 	var err error
 
@@ -1007,7 +1018,7 @@ func main() {
 	})
 
 	var router http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Server", "jekyll-history-service")
+		w.Header().Set("Server", fullVersionStr)
 		hs.ServeHTTP(w, r)
 	})
 
