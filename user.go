@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/google/go-github/github"
@@ -26,21 +25,15 @@ func getUserHandler(githubClient *github.Client) func(w http.ResponseWriter, r *
 			return
 		}
 
-		page := 1
+		page, redirect, err := parsePageString(ps.ByName("page"))
+		if err != nil {
+			w.Header().Del("Cache-Control")
 
-		if pageStr := ps.ByName("page"); len(pageStr) != 0 {
-			var err error
-			if page, err = strconv.Atoi(pageStr); err != nil || page <= 0 {
-				w.Header().Del("Cache-Control")
-
-				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-				return
-			}
-
-			if page == 1 {
-				localRedirect(w, r, "../../")
-				return
-			}
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		} else if redirect {
+			localRedirect(w, r, "../../")
+			return
 		}
 
 		user := ps.ByName("user")
