@@ -35,3 +35,39 @@ input.url {
 
 	cursor: text;
 }
+
+/*! https://codepen.io/flesler/pen/AEIFc */
+.permalink-path {
+	padding: 3px;
+
+	border: thin dashed #aaa;
+}
+
+.permalink-path:empty:before {
+	content: attr(placeholder);
+}
+
+/*! */
+pre {
+	word-wrap: break-word;
+	white-space: pre-wrap;
+}
+
+.commit-message {
+	margin-bottom: 0;
+
+	font-size: 1.2em;
+}
+
+.commit-author {
+	margin-top: 0;
+	padding-left: 1em;
+}
+
+.file-diff h3 {
+	margin-bottom: 0;
+}
+
+.file-diff pre {
+	margin-top: 0;
+}

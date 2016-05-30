@@ -106,13 +106,18 @@ var (
 		"truncate":   truncate,
 	}
 
-	errorTemplate = template.Must(template.New("error.tmpl").Funcs(templateFuncs).ParseFiles("views/error.tmpl"))
-	indexTemplate = template.Must(template.New("index.tmpl").Funcs(templateFuncs).ParseFiles("views/index.tmpl"))
-	userTemplate  = template.Must(template.New("user.tmpl").Funcs(templateFuncs).ParseFiles("views/user.tmpl"))
-	repoTemplate  = template.Must(template.New("repo.tmpl").Funcs(templateFuncs).ParseFiles("views/repo.tmpl"))
+	errorTemplate  = template.Must(template.New("error.tmpl").Funcs(templateFuncs).ParseFiles("views/error.tmpl"))
+	indexTemplate  = template.Must(template.New("index.tmpl").Funcs(templateFuncs).ParseFiles("views/index.tmpl"))
+	userTemplate   = template.Must(template.New("user.tmpl").Funcs(templateFuncs).ParseFiles("views/user.tmpl"))
+	repoTemplate   = template.Must(template.New("repo.tmpl").Funcs(templateFuncs).ParseFiles("views/repo.tmpl"))
+	commitTemplate = template.Must(template.New("commit.tmpl").Funcs(templateFuncs).ParseFiles("views/commit.tmpl"))
 )
 
 func assetPath(name string) string {
+	if strings.HasPrefix(name, "http://") || strings.HasPrefix(name, "https://") || strings.HasPrefix(name, "//") {
+		return name
+	}
+
 	return filepath.Join("/assets/", name)
 }
 
@@ -464,6 +469,48 @@ func Repo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 }
 
 func Commit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	w.Header().Set("Cache-Control", listCacheControl)
+
+	if checkLastModified(w, r, time.Now(), time.Minute) {
+		return
+	}
+
+	user, repo, commit := ps.ByName("user"), ps.ByName("repo"), ps.ByName("commit")
+
+	repoCommit, resp, err := client.Repositories.GetCommit(user, repo, commit)
+	if err != nil {
+		w.Header().Del("Cache-Control")
+
+		log.Printf("%[1]T %[1]v", err)
+		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+		return
+	}
+
+	if debug {
+		log.Printf("GitHub API Rate Limit is %d remaining of %d, to be reset at %s\n", resp.Remaining, resp.Limit, resp.Reset)
+	}
+
+	if err := commitTemplate.Execute(w, struct {
+		User   string
+		Repo   string
+		Commit *github.RepositoryCommit
+
+		HighlightStyle string
+	}{
+		User:   user,
+		Repo:   repo,
+		Commit: repoCommit,
+
+		HighlightStyle: highlightStyle,
+	}); err != nil {
+		w.Header().Del("Cache-Control")
+
+		log.Printf("%[1]T %[1]v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+}
+
+func BuildCommit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Header().Set("Cache-Control", "max-age=0")
 
 	user, repo, commit := ps.ByName("user"), ps.ByName("repo"), ps.ByName("commit")
@@ -840,7 +887,8 @@ func (l debugLogger) Log(w io.Writer, log *weblogs.LogRecord) {
 }
 
 var (
-	debug bool
+	debug          bool
+	highlightStyle string
 
 	client *github.Client
 
@@ -857,6 +905,7 @@ func init() {
 
 func main() {
 	flag.BoolVar(&debug, "debug", false, "do not delete temporary files")
+	flag.StringVar(&highlightStyle, "highlight-style", "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/styles/github-gist.min.css", "the highlight.js stylesheet")
 	flag.Parse()
 
 	var err error
@@ -919,8 +968,9 @@ func main() {
 	baseRouter.GET("/u/:user/p/:page/", User)
 	baseRouter.GET("/u/:user/r/:repo/", Repo)
 	baseRouter.GET("/u/:user/r/:repo/p/:page/", Repo)
-	baseRouter.GET("/u/:user/r/:repo/c/:commit", Commit)
-	baseRouter.GET("/u/:user/r/:repo/c/:commit/*path", Commit)
+	baseRouter.GET("/u/:user/r/:repo/c/:commit/", Commit)
+	baseRouter.GET("/u/:user/r/:repo/c/:commit/b", BuildCommit)
+	baseRouter.GET("/u/:user/r/:repo/c/:commit/b/*path", BuildCommit)
 
 	assetsRouter := http.FileServer(http.Dir("assets"))
 	baseRouter.Handler(http.MethodHead, "/favicon.ico", assetsRouter)
