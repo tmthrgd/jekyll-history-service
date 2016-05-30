@@ -34,6 +34,7 @@ import (
 	"github.com/golang/groupcache"
 	"github.com/google/go-github/github"
 	"github.com/gregjones/httpcache"
+	_ "github.com/joho/godotenv/autoload"
 	"github.com/julienschmidt/httprouter"
 	"github.com/keep94/weblogs"
 	"github.com/keep94/weblogs/loggers"
@@ -909,6 +910,27 @@ func (l debugLogger) Log(w io.Writer, log *weblogs.LogRecord) {
 		log.Extra)
 }
 
+type unathTransport struct {
+	ID     string
+	Secret string
+
+	Transport http.RoundTripper
+}
+
+func (tr unathTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	rt := tr.Transport
+	if rt == nil {
+		rt = http.DefaultTransport
+	}
+
+	q := req.URL.Query()
+	q.Set("client_id", tr.ID)
+	q.Set("client_secret", tr.Secret)
+	req.URL.RawQuery = q.Encode()
+
+	return rt.RoundTrip(req)
+}
+
 var (
 	debug          bool
 	highlightStyle string
@@ -951,7 +973,22 @@ func main() {
 		defer os.RemoveAll(dest)
 	}
 
-	client = github.NewClient(httpcache.NewMemoryCacheTransport().Client())
+	clientTr := httpcache.NewMemoryCacheTransport()
+
+	if id := os.Getenv("GITHUB_CLIENT_ID"); len(id) != 0 {
+		if secret := os.Getenv("GITHUB_CLIENT_SECRET"); len(secret) != 0 {
+			clientTr.Transport = &unathTransport{
+				ID:     id,
+				Secret: secret,
+			}
+		} else {
+			panic("GITHUB_CLIENT_SECRET must be set")
+		}
+	} else if len(os.Getenv("GITHUB_CLIENT_SECRET")) != 0 {
+		panic("GITHUB_CLIENT_ID must be set")
+	}
+
+	client = github.NewClient(clientTr.Client())
 	client.UserAgent = fullVersionStr
 
 	buildFiles = groupcache.NewGroup("build-file", 1<<20, buildFileGetter{
