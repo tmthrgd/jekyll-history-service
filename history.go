@@ -39,7 +39,11 @@ import (
 	"github.com/keep94/weblogs/loggers"
 )
 
-var version string
+var (
+	version string
+
+	fullVersionStr string
+)
 
 type hostRedirector struct {
 	Host string
@@ -692,6 +696,9 @@ func (bf buildFileGetter) Get(_ groupcache.Context, key string, dest groupcache.
 		resp, err := client.Do(&http.Request{
 			URL:  u,
 			Host: u.Host,
+			Header: http.Header{
+				"User-Agent": []string{fullVersionStr},
+			},
 		})
 		if err != nil {
 			return &httpError{err, http.StatusBadGateway}
@@ -908,17 +915,17 @@ var (
 )
 
 func init() {
-	client = github.NewClient(httpcache.NewMemoryCacheTransport().Client())
-}
-
-func main() {
-	var fullVersionStr string
 	if len(version) != 0 {
 		fullVersionStr = fmt.Sprintf("jekyll-history-service (%s)", version)
 	} else {
 		fullVersionStr = "jekyll-history-service"
 	}
 
+	client = github.NewClient(httpcache.NewMemoryCacheTransport().Client())
+	client.UserAgent = fullVersionStr
+}
+
+func main() {
 	flag.BoolVar(&debug, "debug", false, "do not delete temporary files")
 	flag.StringVar(&highlightStyle, "highlight-style", "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/styles/github-gist.min.css", "the highlight.js stylesheet")
 	flag.Parse()
