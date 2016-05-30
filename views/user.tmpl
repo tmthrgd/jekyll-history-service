@@ -12,7 +12,7 @@
 
 	<ul>
 	{{- range .Repos}}
-		<li><a href={{print "/u/" ($.User | urlquery) "/r/" (.Name | urlquery) "/" | html5_attr}}>{{.Name}}</a>: {{.Description}} <a href={{.HTMLURL | html5_attr}}>⤴</a></li>
+		<li><a href={{print "/u/" ($.User | urlquery) "/r/" (.Name | urlquery) "/" | html5_attr}}>{{.Name}}</a>: {{.Description}} <a href={{.HTMLURL | html5_attr}} title="View on GitHub">⤴</a></li>
 	{{- end}}
 	</ul>
 
