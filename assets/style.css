@@ -47,6 +47,10 @@ input.url {
 }
 
 /*! Tom Thorogood */
+ul {
+	list-style-type: square;
+}
+
 pre {
 	word-wrap: break-word;
 	white-space: pre-wrap;
