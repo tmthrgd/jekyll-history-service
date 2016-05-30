@@ -345,6 +345,10 @@ func User(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
+	if debug {
+		log.Printf("GitHub API Rate Limit is %d remaining of %d, to be reset at %s\n", resp.Remaining, resp.Limit, resp.Reset)
+	}
+
 	if err := userTemplate.Execute(w, struct {
 		User  string
 		Repos []github.Repository
@@ -400,6 +404,10 @@ func Repo(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		log.Printf("%[1]T %[1]v", err)
 		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
 		return
+	}
+
+	if debug {
+		log.Printf("GitHub API Rate Limit is %d remaining of %d, to be reset at %s\n", resp.Remaining, resp.Limit, resp.Reset)
 	}
 
 	if err := repoTemplate.Execute(w, struct {
@@ -571,11 +579,15 @@ func (bf buildFileGetter) Get(_ groupcache.Context, key string, dest groupcache.
 	}
 
 	if _, err := os.Stat(repoPath); err != nil {
-		u, _, err := client.Repositories.GetArchiveLink(user, repo, github.Tarball, &github.RepositoryContentGetOptions{
+		u, gresp, err := client.Repositories.GetArchiveLink(user, repo, github.Tarball, &github.RepositoryContentGetOptions{
 			Ref: commit,
 		})
 		if err != nil {
 			return &httpError{err, http.StatusBadGateway}
+		}
+
+		if debug {
+			log.Printf("GitHub API Rate Limit is %d remaining of %d, to be reset at %s\n", gresp.Remaining, gresp.Limit, gresp.Reset)
 		}
 
 		if u == nil {
