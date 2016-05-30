@@ -84,13 +84,13 @@ func main() {
 	githubClient := github.NewClient(clientTr.Client())
 	githubClient.UserAgent = fullVersionStr
 
-	buildJekyll = groupcache.NewGroup("build-jekyll", 1<<20, buildJekyllGetter{
+	buildJekyll := groupcache.NewGroup("build-jekyll", 1<<20, buildJekyllGetter{
 		RepoBasePath: tmp,
 		SiteBasePath: dest,
 
 		GithubClient: githubClient,
 	})
-	builtFiles = groupcache.NewGroup("built-file", 1<<20, builtFileGetter{
+	builtFiles := groupcache.NewGroup("built-file", 1<<20, builtFileGetter{
 		SiteBasePath: dest,
 	})
 
@@ -129,8 +129,9 @@ func main() {
 	baseRouter.GET("/u/:user/r/:repo/t/:tree/", repo)
 	baseRouter.GET("/u/:user/r/:repo/t/:tree/p/:page/", repo)
 	baseRouter.GET("/u/:user/r/:repo/c/:commit/", GetCommitHandler(githubClient, highlightStyle))
-	baseRouter.GET("/u/:user/r/:repo/c/:commit/b", BuildCommit)
-	baseRouter.GET("/u/:user/r/:repo/c/:commit/b/*path", BuildCommit)
+	buildCommit := GetBuildCommitHandler(buildJekyll)
+	baseRouter.GET("/u/:user/r/:repo/c/:commit/b", buildCommit)
+	baseRouter.GET("/u/:user/r/:repo/c/:commit/b/*path", buildCommit)
 
 	assetsRouter := http.FileServer(&assetfs.AssetFS{
 		Asset:     Asset,
@@ -147,7 +148,9 @@ func main() {
 	baseRouter.Handler(http.MethodGet, "/assets/*path", http.StripPrefix("/assets/", assetsRouter))
 
 	hs := new(hostSwitch)
-	hs.NotFound = new(repoSwitch)
+	hs.NotFound = &repoSwitch{
+		BuiltFiles: builtFiles,
+	}
 
 	hs.Add("jekyllhistory.com", hostRedirector{
 		Host: "jekyllhistory.org",

@@ -106,5 +106,3 @@ func (bf builtFileGetter) TryFind404(_ groupcache.Context, tag string, dir http.
 
 	return notFoundError(b)
 }
-
-var builtFiles *groupcache.Group

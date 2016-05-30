@@ -151,5 +151,3 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 
 	return nil
 }
-
-var buildJekyll *groupcache.Group

@@ -66,39 +66,41 @@ func GetCommitHandler(githubClient *github.Client, highlightStyle string) func(w
 	}
 }
 
-func BuildCommit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	w.Header().Set("Cache-Control", "max-age=0")
+func GetBuildCommitHandler(buildJekyll *groupcache.Group) func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		w.Header().Set("Cache-Control", "max-age=0")
 
-	user, repo, commit := ps.ByName("user"), ps.ByName("repo"), ps.ByName("commit")
+		user, repo, commit := ps.ByName("user"), ps.ByName("repo"), ps.ByName("commit")
 
-	data := user + "\x00" + repo + "\x00" + commit
+		data := user + "\x00" + repo + "\x00" + commit
 
-	rawTag := sha256.Sum256([]byte(data))
-	tag := hex.EncodeToString(rawTag[:16])
+		rawTag := sha256.Sum256([]byte(data))
+		tag := hex.EncodeToString(rawTag[:16])
 
-	var res []byte
+		var res []byte
 
-	if err := buildJekyll.Get(nil, tag+"\x00"+data, groupcache.TruncatingByteSliceSink(&res)); err != nil {
-		if herr, ok := err.(*httpError); ok {
-			log.Printf("%[1]T %[1]v", herr.Err)
-			http.Error(w, http.StatusText(herr.Code), herr.Code)
-		} else if os.IsNotExist(err) {
-			http.NotFound(w, r)
-		} else {
-			log.Printf("%[1]T %[1]v", err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		if err := buildJekyll.Get(nil, tag+"\x00"+data, groupcache.TruncatingByteSliceSink(&res)); err != nil {
+			if herr, ok := err.(*httpError); ok {
+				log.Printf("%[1]T %[1]v", herr.Err)
+				http.Error(w, http.StatusText(herr.Code), herr.Code)
+			} else if os.IsNotExist(err) {
+				http.NotFound(w, r)
+			} else {
+				log.Printf("%[1]T %[1]v", err)
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
+
+			return
 		}
 
-		return
+		url := *r.URL
+		url.Host = tag + ".jekyllhistory.org"
+
+		if _, port, err := net.SplitHostPort(r.Host); err == nil {
+			url.Host = net.JoinHostPort(url.Host, port)
+		}
+
+		url.Path = ps.ByName("path")
+		http.Redirect(w, r, url.String(), http.StatusFound)
 	}
-
-	url := *r.URL
-	url.Host = tag + ".jekyllhistory.org"
-
-	if _, port, err := net.SplitHostPort(r.Host); err == nil {
-		url.Host = net.JoinHostPort(url.Host, port)
-	}
-
-	url.Path = ps.ByName("path")
-	http.Redirect(w, r, url.String(), http.StatusFound)
 }

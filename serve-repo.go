@@ -27,7 +27,9 @@ var (
 	hostRegex = regexp.MustCompile(`^([0-9a-fA-F]{32}).jekyllhistory.org$`)
 )
 
-type repoSwitch struct{}
+type repoSwitch struct {
+	BuiltFiles *groupcache.Group
+}
 
 func (rs repoSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	host, _, err := net.SplitHostPort(r.Host)
@@ -70,7 +72,7 @@ func (rs repoSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var dst []byte
 
-	if err := builtFiles.Get(nil, tag+"\x00"+r.URL.Path, groupcache.AllocatingByteSliceSink(&dst)); err != nil {
+	if err := rs.BuiltFiles.Get(nil, tag+"\x00"+r.URL.Path, groupcache.AllocatingByteSliceSink(&dst)); err != nil {
 		if nf, ok := err.(notFoundError); ok {
 			http.ServeContent(w, r, r.URL.Path, timeZero, bytes.NewReader([]byte(nf)))
 			return
