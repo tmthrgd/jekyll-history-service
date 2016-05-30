@@ -96,3 +96,11 @@ hr, .site-footer {
 .site-footer {
 	text-align: center;
 }
+
+.parent-commit:before {
+	content: " + ";
+}
+
+.parent-commit:first-child:before {
+	content: "";
+}
