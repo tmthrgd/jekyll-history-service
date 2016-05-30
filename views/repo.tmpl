@@ -21,7 +21,7 @@
 	<main>
 		<ul>
 		{{- range .Commits}}
-			<li><a href={{print "/u/" ($.User | urlquery) "/r/" ($.Repo | urlquery) "/c/" (.SHA | urlquery) "/" | html5_attr}}><code>{{html (truncate .SHA 10)}}</code></a>:
+			<li><a href={{print "/u/" ($.User | urlquery) "/r/" ($.Repo | urlquery) "/c/" (.SHA | urlquery) "/" | html5_attr}}><code>{{truncate .SHA 10}}</code></a>:
 				{{- if .Commit}} {{.Commit.Message}}{{end}} <a href={{.HTMLURL | html5_attr}} title="View on GitHub">⤴</a></li>
 		{{- end}}
 		</ul>
