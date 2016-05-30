@@ -30,6 +30,9 @@ import (
 var debug bool
 
 func main() {
+	var addr string
+	flag.StringVar(&addr, "addr", ":8080", "the address to listen on")
+
 	flag.BoolVar(&debug, "debug", false, "do not delete temporary files")
 
 	var highlightStyle string
@@ -170,6 +173,6 @@ func main() {
 		})
 	}
 
-	fmt.Println("Listening on :8080")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	fmt.Printf("Listening on %s\n", addr)
+	log.Fatal(http.ListenAndServe(addr, router))
 }
