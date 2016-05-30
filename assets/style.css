@@ -15,3 +15,23 @@ body {
 h1, h2, h3 {
 	line-height: 1.2;
 }
+
+/* ! https://rawgit.com/ */
+.offscreen {
+	position: absolute;
+	left: -9999px;
+}
+
+input.url {
+	width: 100%;
+
+	padding: 0 6px;
+
+	background: #fbfbfb;
+	border: thin solid #dfdfdf;
+
+	font-size: 1.3em;
+	text-align: center;
+
+	cursor: text;
+}

@@ -22,6 +22,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -299,6 +300,39 @@ func Index(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		log.Printf("%[1]T %[1]v", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 	}
+}
+
+var githubURLRegex = regexp.MustCompile(`^(?:https?://)?github.com/([^/]+)(?:/([^/]+)(?:/commit/([a-fA-F0-9]+))?)?/?$`)
+
+func Goto(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	w.Header().Set("Cache-Control", "max-age=0")
+
+	if err := r.ParseForm(); err != nil {
+		log.Printf("%[1]T %[1]v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	newURL := *r.URL
+
+	if githubURL := r.Form.Get("url"); len(githubURL) != 0 {
+		m := githubURLRegex.FindStringSubmatch(githubURL)
+		switch {
+		case m == nil:
+			newURL.Path = "/"
+		case len(m[3]) != 0:
+			newURL.Path = "/u/" + url.QueryEscape(m[1]) + "/r/" + url.QueryEscape(m[2]) + "/c/" + url.QueryEscape(m[3]) + "/"
+		case len(m[2]) != 0:
+			newURL.Path = "/u/" + url.QueryEscape(m[1]) + "/r/" + url.QueryEscape(m[2]) + "/"
+		default:
+			newURL.Path = "/u/" + url.QueryEscape(m[1]) + "/"
+		}
+	} else {
+		newURL.Path = "/"
+	}
+
+	newURL.RawQuery = ""
+	http.Redirect(w, r, newURL.String(), http.StatusFound)
 }
 
 var listCacheControl = fmt.Sprintf("public, max-age=%d", time.Minute/time.Second)
@@ -880,6 +914,7 @@ func main() {
 
 	baseRouter.HEAD("/", Index)
 	baseRouter.GET("/", Index)
+	baseRouter.GET("/goto/", Goto)
 	baseRouter.GET("/u/:user/", User)
 	baseRouter.GET("/u/:user/p/:page/", User)
 	baseRouter.GET("/u/:user/r/:repo/", Repo)
