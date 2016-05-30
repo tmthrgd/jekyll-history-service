@@ -22,45 +22,47 @@ import (
 
 var commitCacheControl = fmt.Sprintf("public, max-age=%d", time.Minute/time.Second)
 
-func Commit(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	w.Header().Set("Cache-Control", commitCacheControl)
+func GetCommitHandler(highlightStyle string) func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		w.Header().Set("Cache-Control", commitCacheControl)
 
-	if checkLastModified(w, r, time.Now(), time.Minute) {
-		return
-	}
+		if checkLastModified(w, r, time.Now(), time.Minute) {
+			return
+		}
 
-	user, repo, commit := ps.ByName("user"), ps.ByName("repo"), ps.ByName("commit")
+		user, repo, commit := ps.ByName("user"), ps.ByName("repo"), ps.ByName("commit")
 
-	repoCommit, resp, err := client.Repositories.GetCommit(user, repo, commit)
-	if err != nil {
-		w.Header().Del("Cache-Control")
+		repoCommit, resp, err := client.Repositories.GetCommit(user, repo, commit)
+		if err != nil {
+			w.Header().Del("Cache-Control")
 
-		log.Printf("%[1]T %[1]v", err)
-		http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
-		return
-	}
+			log.Printf("%[1]T %[1]v", err)
+			http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+			return
+		}
 
-	if debug {
-		log.Printf("GitHub API Rate Limit is %d remaining of %d, to be reset at %s\n", resp.Remaining, resp.Limit, resp.Reset)
-	}
+		if debug {
+			log.Printf("GitHub API Rate Limit is %d remaining of %d, to be reset at %s\n", resp.Remaining, resp.Limit, resp.Reset)
+		}
 
-	if err := commitTemplate.Execute(w, struct {
-		User   string
-		Repo   string
-		Commit *github.RepositoryCommit
+		if err := commitTemplate.Execute(w, struct {
+			User   string
+			Repo   string
+			Commit *github.RepositoryCommit
 
-		HighlightStyle string
-	}{
-		User:   user,
-		Repo:   repo,
-		Commit: repoCommit,
+			HighlightStyle string
+		}{
+			User:   user,
+			Repo:   repo,
+			Commit: repoCommit,
 
-		HighlightStyle: highlightStyle,
-	}); err != nil {
-		w.Header().Del("Cache-Control")
+			HighlightStyle: highlightStyle,
+		}); err != nil {
+			w.Header().Del("Cache-Control")
 
-		log.Printf("%[1]T %[1]v", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			log.Printf("%[1]T %[1]v", err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
 	}
 }
 

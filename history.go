@@ -35,16 +35,16 @@ func (h httpError) Error() string {
 	return h.Err.Error()
 }
 
-var (
-	debug          bool
-	highlightStyle string
+var debug bool
 
-	client *github.Client
-)
+var client *github.Client
 
 func main() {
 	flag.BoolVar(&debug, "debug", false, "do not delete temporary files")
+
+	var highlightStyle string
 	flag.StringVar(&highlightStyle, "highlight-style", "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/styles/github-gist.min.css", "the highlight.js stylesheet")
+
 	flag.Parse()
 
 	fmt.Println(fullVersionStr)
@@ -126,7 +126,7 @@ func main() {
 	baseRouter.GET("/u/:user/r/:repo/p/:page/", Repo)
 	baseRouter.GET("/u/:user/r/:repo/t/:tree/", Repo)
 	baseRouter.GET("/u/:user/r/:repo/t/:tree/p/:page/", Repo)
-	baseRouter.GET("/u/:user/r/:repo/c/:commit/", Commit)
+	baseRouter.GET("/u/:user/r/:repo/c/:commit/", GetCommitHandler(highlightStyle))
 	baseRouter.GET("/u/:user/r/:repo/c/:commit/b", BuildCommit)
 	baseRouter.GET("/u/:user/r/:repo/c/:commit/b/*path", BuildCommit)
 
