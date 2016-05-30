@@ -25,7 +25,8 @@ type buildJekyllGetter struct {
 	RepoBasePath string
 	SiteBasePath string
 
-	Client *http.Client
+	GithubClient *github.Client
+	HTTPClient   *http.Client
 }
 
 func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcache.Sink) error {
@@ -44,7 +45,7 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 	}
 
 	if _, err := os.Stat(repoPath); err != nil {
-		u, gresp, err := client.Repositories.GetArchiveLink(user, repo, github.Tarball, &github.RepositoryContentGetOptions{
+		u, gresp, err := bj.GithubClient.Repositories.GetArchiveLink(user, repo, github.Tarball, &github.RepositoryContentGetOptions{
 			Ref: commit,
 		})
 		if err != nil {
@@ -59,7 +60,7 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 			return os.ErrNotExist
 		}
 
-		client := bj.Client
+		client := bj.HTTPClient
 		if client == nil {
 			client = http.DefaultClient
 		}

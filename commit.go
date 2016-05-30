@@ -20,11 +20,11 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-var commitCacheControl = fmt.Sprintf("public, max-age=%d", time.Minute/time.Second)
+func GetCommitHandler(githubClient *github.Client, highlightStyle string) func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var cacheControl = fmt.Sprintf("public, max-age=%d", time.Minute/time.Second)
 
-func GetCommitHandler(highlightStyle string) func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		w.Header().Set("Cache-Control", commitCacheControl)
+		w.Header().Set("Cache-Control", cacheControl)
 
 		if checkLastModified(w, r, time.Now(), time.Minute) {
 			return
@@ -32,7 +32,7 @@ func GetCommitHandler(highlightStyle string) func(w http.ResponseWriter, r *http
 
 		user, repo, commit := ps.ByName("user"), ps.ByName("repo"), ps.ByName("commit")
 
-		repoCommit, resp, err := client.Repositories.GetCommit(user, repo, commit)
+		repoCommit, resp, err := githubClient.Repositories.GetCommit(user, repo, commit)
 		if err != nil {
 			w.Header().Del("Cache-Control")
 

@@ -37,8 +37,6 @@ func (h httpError) Error() string {
 
 var debug bool
 
-var client *github.Client
-
 func main() {
 	flag.BoolVar(&debug, "debug", false, "do not delete temporary files")
 
@@ -83,12 +81,14 @@ func main() {
 		panic("both GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET must be set")
 	}
 
-	client = github.NewClient(clientTr.Client())
-	client.UserAgent = fullVersionStr
+	githubClient := github.NewClient(clientTr.Client())
+	githubClient.UserAgent = fullVersionStr
 
 	buildJekyll = groupcache.NewGroup("build-jekyll", 1<<20, buildJekyllGetter{
 		RepoBasePath: tmp,
 		SiteBasePath: dest,
+
+		GithubClient: githubClient,
 	})
 	builtFiles = groupcache.NewGroup("built-file", 1<<20, builtFileGetter{
 		SiteBasePath: dest,
@@ -120,13 +120,15 @@ func main() {
 	baseRouter.HEAD("/", Index)
 	baseRouter.GET("/", Index)
 	baseRouter.GET("/goto/", Goto)
-	baseRouter.GET("/u/:user/", User)
-	baseRouter.GET("/u/:user/p/:page/", User)
-	baseRouter.GET("/u/:user/r/:repo/", Repo)
-	baseRouter.GET("/u/:user/r/:repo/p/:page/", Repo)
-	baseRouter.GET("/u/:user/r/:repo/t/:tree/", Repo)
-	baseRouter.GET("/u/:user/r/:repo/t/:tree/p/:page/", Repo)
-	baseRouter.GET("/u/:user/r/:repo/c/:commit/", GetCommitHandler(highlightStyle))
+	user := GetUserHandler(githubClient)
+	baseRouter.GET("/u/:user/", user)
+	baseRouter.GET("/u/:user/p/:page/", user)
+	repo := GetRepoHandler(githubClient)
+	baseRouter.GET("/u/:user/r/:repo/", repo)
+	baseRouter.GET("/u/:user/r/:repo/p/:page/", repo)
+	baseRouter.GET("/u/:user/r/:repo/t/:tree/", repo)
+	baseRouter.GET("/u/:user/r/:repo/t/:tree/p/:page/", repo)
+	baseRouter.GET("/u/:user/r/:repo/c/:commit/", GetCommitHandler(githubClient, highlightStyle))
 	baseRouter.GET("/u/:user/r/:repo/c/:commit/b", BuildCommit)
 	baseRouter.GET("/u/:user/r/:repo/c/:commit/b/*path", BuildCommit)
 
