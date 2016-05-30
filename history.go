@@ -31,6 +31,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/elazarl/go-bindata-assetfs"
 	"github.com/golang/groupcache"
 	"github.com/google/go-github/github"
 	"github.com/gregjones/httpcache"
@@ -39,6 +40,8 @@ import (
 	"github.com/keep94/weblogs"
 	"github.com/keep94/weblogs/loggers"
 )
+
+//go:generate go-bindata -nomemcopy -nocompress assets/... views/...
 
 var (
 	version string
@@ -121,11 +124,11 @@ var (
 		"truncate":   truncate,
 	}
 
-	errorTemplate  = template.Must(template.New("error.tmpl").Funcs(templateFuncs).ParseFiles("views/error.tmpl"))
-	indexTemplate  = template.Must(template.New("index.tmpl").Funcs(templateFuncs).ParseFiles("views/index.tmpl"))
-	userTemplate   = template.Must(template.New("user.tmpl").Funcs(templateFuncs).ParseFiles("views/user.tmpl"))
-	repoTemplate   = template.Must(template.New("repo.tmpl").Funcs(templateFuncs).ParseFiles("views/repo.tmpl"))
-	commitTemplate = template.Must(template.New("commit.tmpl").Funcs(templateFuncs).ParseFiles("views/commit.tmpl"))
+	errorTemplate  = template.Must(template.New("error.tmpl").Funcs(templateFuncs).Parse(string(MustAsset("views/error.tmpl"))))
+	indexTemplate  = template.Must(template.New("index.tmpl").Funcs(templateFuncs).Parse(string(MustAsset("views/index.tmpl"))))
+	userTemplate   = template.Must(template.New("user.tmpl").Funcs(templateFuncs).Parse(string(MustAsset("views/user.tmpl"))))
+	repoTemplate   = template.Must(template.New("repo.tmpl").Funcs(templateFuncs).Parse(string(MustAsset("views/repo.tmpl"))))
+	commitTemplate = template.Must(template.New("commit.tmpl").Funcs(templateFuncs).Parse(string(MustAsset("views/commit.tmpl"))))
 )
 
 func assetPath(name string) string {
@@ -300,7 +303,7 @@ var (
 )
 
 func init() {
-	if stat, err := os.Stat("views/index.tmpl"); err == nil {
+	if stat, err := AssetInfo("views/index.tmpl"); err == nil {
 		indexModTime = stat.ModTime()
 	} else {
 		panic(err)
@@ -1032,7 +1035,13 @@ func main() {
 	baseRouter.GET("/u/:user/r/:repo/c/:commit/b", BuildCommit)
 	baseRouter.GET("/u/:user/r/:repo/c/:commit/b/*path", BuildCommit)
 
-	assetsRouter := http.FileServer(http.Dir("assets"))
+	assetsRouter := http.FileServer(&assetfs.AssetFS{
+		Asset:     Asset,
+		AssetDir:  AssetDir,
+		AssetInfo: AssetInfo,
+
+		Prefix: "assets",
+	})
 	baseRouter.Handler(http.MethodHead, "/favicon.ico", assetsRouter)
 	baseRouter.Handler(http.MethodGet, "/favicon.ico", assetsRouter)
 	baseRouter.Handler(http.MethodHead, "/robots.txt", assetsRouter)
