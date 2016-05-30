@@ -6,7 +6,7 @@ any commit in its history.
 ## Download:
 
 ```
-go get github.com/tmthrgd/jekyll-history-service && go install -ldflags "-X 'main.version=$(git rev-parse --short HEAD)$(git diff-files --quiet || echo -n -dirty)'" github.com/tmthrgd/jekyll-history-service
+go get github.com/tmthrgd/jekyll-history-service && go install github.com/tmthrgd/jekyll-history-service
 ```
 
 ## Run:
