@@ -47,7 +47,7 @@ input.url {
 	content: attr(placeholder);
 }
 
-/*! */
+/*! Tom Thorogood */
 pre {
 	word-wrap: break-word;
 	white-space: pre-wrap;
@@ -70,4 +70,17 @@ pre {
 
 .file-diff pre {
 	margin-top: 0;
+}
+
+hr, .site-footer {
+	width: 90%;
+
+	margin: 0 auto;
+
+	border: none;
+	border-top: thin dotted #aaa;
+}
+
+.site-footer {
+	text-align: center;
 }
