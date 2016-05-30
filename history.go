@@ -25,15 +25,7 @@ import (
 )
 
 //go:generate go-bindata -nomemcopy -nocompress assets/... views/...
-
-type httpError struct {
-	Err  error
-	Code int
-}
-
-func (h httpError) Error() string {
-	return h.Err.Error()
-}
+//go:generate protoc --go_out=. groupcache.proto
 
 var debug bool
 

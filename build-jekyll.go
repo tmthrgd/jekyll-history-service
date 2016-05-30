@@ -8,7 +8,7 @@ package main
 import (
 	"archive/tar"
 	"compress/gzip"
-	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -30,9 +30,13 @@ type buildJekyllGetter struct {
 }
 
 func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcache.Sink) error {
+	var resp BuildJekyllResponse
+
 	parts := strings.Split(key, "\x00")
 	if len(parts) != 4 {
-		return &httpError{errors.New("invalid key"), http.StatusBadRequest}
+		resp.Error = "invalid key"
+		resp.Code = http.StatusBadRequest
+		return dest.SetProto(&resp)
 	}
 
 	tag, user, repo, commit := parts[0], parts[1], parts[2], parts[3]
@@ -41,7 +45,7 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 	sitePath := filepath.Join(bj.SiteBasePath, tag[0:1], tag[1:2], tag[2:])
 
 	if _, err := os.Stat(sitePath); err == nil {
-		return nil
+		return dest.SetProto(&resp)
 	}
 
 	if _, err := os.Stat(repoPath); err != nil {
@@ -49,7 +53,9 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 			Ref: commit,
 		})
 		if err != nil {
-			return &httpError{err, http.StatusBadGateway}
+			resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
+			resp.Code = http.StatusBadGateway
+			return dest.SetProto(&resp)
 		}
 
 		if debug {
@@ -57,7 +63,9 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 		}
 
 		if u == nil {
-			return os.ErrNotExist
+			resp.Error = "not found"
+			resp.Code = http.StatusNotFound
+			return dest.SetProto(&resp)
 		}
 
 		client := bj.HTTPClient
@@ -65,7 +73,7 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 			client = http.DefaultClient
 		}
 
-		resp, err := client.Do(&http.Request{
+		hresp, err := client.Do(&http.Request{
 			URL:  u,
 			Host: u.Host,
 			Header: http.Header{
@@ -73,16 +81,19 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 			},
 		})
 		if err != nil {
-			return &httpError{err, http.StatusBadGateway}
+			resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
+			resp.Code = http.StatusBadGateway
+			return dest.SetProto(&resp)
 		}
 
-		if resp.Body == nil {
-			return errors.New("(*http.Client).Do did not return body")
+		if hresp.Body == nil {
+			resp.Error = "(*http.Client).Do did not return body"
+			return dest.SetProto(&resp)
 		}
 
-		defer resp.Body.Close()
+		defer hresp.Body.Close()
 
-		reader, err := gzip.NewReader(resp.Body)
+		reader, err := gzip.NewReader(hresp.Body)
 		if err != nil {
 			return err
 		}
@@ -100,7 +111,8 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 			if err == io.EOF {
 				break
 			} else if err != nil {
-				return err
+				resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
+				return dest.SetProto(&resp)
 			}
 
 			idx := strings.IndexRune(header.Name, filepath.Separator)
@@ -115,7 +127,8 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 
 			if info.IsDir() {
 				if err = os.MkdirAll(path, mode); err != nil {
-					return err
+					resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
+					return dest.SetProto(&resp)
 				}
 
 				continue
@@ -128,14 +141,16 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 
 			file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, mode)
 			if err != nil {
-				return err
+				resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
+				return dest.SetProto(&resp)
 			}
 
 			_, err = io.Copy(file, tarReader)
 			file.Close()
 
 			if err != nil {
-				return err
+				resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
+				return dest.SetProto(&resp)
 			}
 		}
 	}
@@ -146,8 +161,8 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return err
+		resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
 	}
 
-	return nil
+	return dest.SetProto(&resp)
 }

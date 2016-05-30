@@ -6,7 +6,7 @@
 package main
 
 import (
-	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -16,20 +16,18 @@ import (
 	"github.com/golang/groupcache"
 )
 
-type notFoundError []byte
-
-func (notFoundError) Error() string {
-	return os.ErrNotExist.Error()
-}
-
 type builtFileGetter struct {
 	SiteBasePath string
 }
 
 func (bf builtFileGetter) Get(ctx groupcache.Context, key string, dest groupcache.Sink) error {
+	var resp BuiltFileResponse
+
 	parts := strings.Split(key, "\x00")
 	if len(parts) != 2 {
-		return &httpError{errors.New("invalid key"), http.StatusBadRequest}
+		resp.Error = "invalid key"
+		resp.Code = http.StatusBadRequest
+		return dest.SetProto(&resp)
 	}
 
 	tag, file := parts[0], parts[1]
@@ -42,18 +40,24 @@ func (bf builtFileGetter) Get(ctx groupcache.Context, key string, dest groupcach
 			return bf.TryFind404(ctx, tag, dir, dest)
 		}
 
-		return err
+		resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
+		return dest.SetProto(&resp)
 	}
 
 	stat, err := f.Stat()
 	if err != nil {
 		f.Close()
-		return err
+
+		resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
+		return dest.SetProto(&resp)
 	}
 
 	if stat.Mode()&(os.ModeSymlink|os.ModeNamedPipe|os.ModeSocket|os.ModeDevice) != 0 {
 		f.Close()
-		return errors.New("not a regular file")
+
+		resp.Error = "not a regular file"
+		resp.Code = http.StatusForbidden
+		return dest.SetProto(&resp)
 	}
 
 	if stat.IsDir() {
@@ -64,45 +68,57 @@ func (bf builtFileGetter) Get(ctx groupcache.Context, key string, dest groupcach
 				return bf.TryFind404(ctx, tag, dir, dest)
 			}
 
-			return err
+			resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
+			return dest.SetProto(&resp)
 		}
 	}
 
-	b, err := ioutil.ReadAll(f)
+	if b, err := ioutil.ReadAll(f); err != nil {
+		resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
+	} else {
+		resp.Data = b
+		resp.ModTime = stat.ModTime().Unix()
+	}
 
 	f.Close()
 
-	if err != nil {
-		return err
-	}
-
-	return dest.SetBytes(b)
+	return dest.SetProto(&resp)
 }
 
 func (bf builtFileGetter) TryFind404(_ groupcache.Context, tag string, dir http.Dir, dest groupcache.Sink) error {
+	var resp BuiltFileResponse
+
 	f, err := dir.Open("/404.html")
 	if err != nil {
-		return err
+		if os.IsNotExist(err) {
+			resp.Error = "not found"
+			resp.Code = http.StatusNotFound
+		} else {
+			resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
+		}
+
+		return dest.SetProto(&resp)
 	}
+
+	defer f.Close()
 
 	stat, err := f.Stat()
 	if err != nil {
-		f.Close()
-		return err
+		resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
+		return dest.SetProto(&resp)
 	}
 
 	if stat.Mode()&(os.ModeDir|os.ModeSymlink|os.ModeNamedPipe|os.ModeSocket|os.ModeDevice) != 0 {
-		f.Close()
-		return errors.New("not a regular file")
+		resp.Error = "not a regular file"
+		resp.Code = http.StatusForbidden
+		return dest.SetProto(&resp)
 	}
 
-	b, err := ioutil.ReadAll(f)
-
-	f.Close()
-
-	if err != nil {
-		return err
+	if resp.Data, err = ioutil.ReadAll(f); err != nil {
+		resp.Data = nil
+		resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
 	}
 
-	return notFoundError(b)
+	resp.Code = http.StatusNotFound
+	return dest.SetProto(&resp)
 }

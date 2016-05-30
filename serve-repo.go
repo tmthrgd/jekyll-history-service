@@ -11,7 +11,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -70,29 +69,30 @@ func (rs repoSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var dst []byte
+	var resp BuiltFileResponse
 
-	if err := rs.BuiltFiles.Get(nil, tag+"\x00"+r.URL.Path, groupcache.AllocatingByteSliceSink(&dst)); err != nil {
-		if nf, ok := err.(notFoundError); ok {
-			http.ServeContent(w, r, r.URL.Path, timeZero, bytes.NewReader([]byte(nf)))
-			return
-		}
-
+	if err := rs.BuiltFiles.Get(nil, tag+"\x00"+r.URL.Path, groupcache.ProtoSink(&resp)); err != nil || len(resp.Error) != 0 {
 		h.Del("Cache-Control")
 		h.Del("Etag")
 
-		if herr, ok := err.(*httpError); ok {
-			log.Printf("%[1]T %[1]v", herr.Err)
-			http.Error(w, http.StatusText(herr.Code), herr.Code)
-		} else if os.IsNotExist(err) {
-			http.NotFound(w, r)
-		} else {
+		if err != nil {
 			log.Printf("%[1]T %[1]v", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		} else if resp.Code == http.StatusNotFound && len(resp.Data) != 0 {
+			w.WriteHeader(int(resp.Code))
+			w.Write(resp.Data)
+		} else {
+			log.Println(resp.Error)
+
+			if resp.Code != 0 {
+				http.Error(w, http.StatusText(int(resp.Code)), int(resp.Code))
+			} else {
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
 		}
 
 		return
 	}
 
-	http.ServeContent(w, r, r.URL.Path, timeZero, bytes.NewReader(dst))
+	http.ServeContent(w, r, r.URL.Path, time.Unix(resp.ModTime, 0), bytes.NewReader(resp.Data))
 }

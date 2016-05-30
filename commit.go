@@ -12,7 +12,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/golang/groupcache"
@@ -80,16 +79,20 @@ func getBuildCommitHandler(buildJekyll *groupcache.Group) func(w http.ResponseWr
 		rawTag := sha256.Sum256([]byte(data))
 		tag := hex.EncodeToString(rawTag[:16])
 
-		var res []byte
+		var resp BuildJekyllResponse
 
-		if err := buildJekyll.Get(nil, tag+"\x00"+data, groupcache.TruncatingByteSliceSink(&res)); err != nil {
-			if herr, ok := err.(*httpError); ok {
-				log.Printf("%[1]T %[1]v", herr.Err)
-				http.Error(w, http.StatusText(herr.Code), herr.Code)
-			} else if os.IsNotExist(err) {
-				http.NotFound(w, r)
+		if err := buildJekyll.Get(nil, tag+"\x00"+data, groupcache.ProtoSink(&resp)); err != nil {
+			log.Printf("%[1]T %[1]v", err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		if len(resp.Error) != 0 {
+			log.Println(resp.Error)
+
+			if resp.Code != 0 {
+				http.Error(w, http.StatusText(int(resp.Code)), int(resp.Code))
 			} else {
-				log.Printf("%[1]T %[1]v", err)
 				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			}
 
