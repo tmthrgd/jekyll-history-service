@@ -16,7 +16,7 @@ import (
 
 var githubURLRegex = regexp.MustCompile(`^(?:https?://)?github.com/([^/]+)(?:/([^/]+)(?:/commit/([a-fA-F0-9]+)|/tree/([^/]+))?)?/?$`)
 
-func Goto(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func gotoHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Header().Set("Cache-Control", "max-age=0")
 
 	if err := r.ParseForm(); err != nil {

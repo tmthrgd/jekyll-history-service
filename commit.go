@@ -20,7 +20,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func GetCommitHandler(githubClient *github.Client, highlightStyle string) func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func getCommitHandler(githubClient *github.Client, highlightStyle string) func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var cacheControl = fmt.Sprintf("public, max-age=%d", time.Minute/time.Second)
 
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -66,7 +66,7 @@ func GetCommitHandler(githubClient *github.Client, highlightStyle string) func(w
 	}
 }
 
-func GetBuildCommitHandler(buildJekyll *groupcache.Group) func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func getBuildCommitHandler(buildJekyll *groupcache.Group) func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		w.Header().Set("Cache-Control", "max-age=0")
 

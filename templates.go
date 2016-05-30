@@ -51,7 +51,7 @@ func html5Attr(value string) string {
 func truncate(value string, length int) string {
 	numRunes := 0
 
-	for index, _ := range value {
+	for index := range value {
 		numRunes++
 
 		if numRunes > length {

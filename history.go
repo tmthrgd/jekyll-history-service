@@ -102,9 +102,9 @@ func main() {
 		HashFn: func(data []byte) uint32 {
 			if idx := bytes.IndexByte(data, 0x00); idx != -1 {
 				return crc32.Checksum(data[:idx], castagnoli)
-			} else {
-				return crc32.Checksum(data, castagnoli)
 			}
+
+			return crc32.Checksum(data, castagnoli)
 		},
 	}
 	httpPool := groupcache.NewHTTPPoolOpts("http://jekyllhistory.org:8080", poolOpts)
@@ -117,19 +117,19 @@ func main() {
 
 	baseRouter.Handler(http.MethodGet, poolOpts.BasePath, httpPool)
 
-	baseRouter.HEAD("/", Index)
-	baseRouter.GET("/", Index)
-	baseRouter.GET("/goto/", Goto)
-	user := GetUserHandler(githubClient)
+	baseRouter.HEAD("/", indexHandler)
+	baseRouter.GET("/", indexHandler)
+	baseRouter.GET("/goto/", gotoHandler)
+	user := getUserHandler(githubClient)
 	baseRouter.GET("/u/:user/", user)
 	baseRouter.GET("/u/:user/p/:page/", user)
-	repo := GetRepoHandler(githubClient)
+	repo := getRepoHandler(githubClient)
 	baseRouter.GET("/u/:user/r/:repo/", repo)
 	baseRouter.GET("/u/:user/r/:repo/p/:page/", repo)
 	baseRouter.GET("/u/:user/r/:repo/t/:tree/", repo)
 	baseRouter.GET("/u/:user/r/:repo/t/:tree/p/:page/", repo)
-	baseRouter.GET("/u/:user/r/:repo/c/:commit/", GetCommitHandler(githubClient, highlightStyle))
-	buildCommit := GetBuildCommitHandler(buildJekyll)
+	baseRouter.GET("/u/:user/r/:repo/c/:commit/", getCommitHandler(githubClient, highlightStyle))
+	buildCommit := getBuildCommitHandler(buildJekyll)
 	baseRouter.GET("/u/:user/r/:repo/c/:commit/b", buildCommit)
 	baseRouter.GET("/u/:user/r/:repo/c/:commit/b/*path", buildCommit)
 

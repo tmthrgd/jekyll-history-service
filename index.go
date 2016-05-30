@@ -16,7 +16,7 @@ import (
 
 var indexCacheControl = fmt.Sprintf("public, max-age=%d", (10*time.Minute)/time.Second)
 
-func Index(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func indexHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Header().Set("Cache-Control", indexCacheControl)
 
 	if checkLastModified(w, r, indexModTime, 0) {

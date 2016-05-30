@@ -16,7 +16,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func GetRepoHandler(githubClient *github.Client) func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func getRepoHandler(githubClient *github.Client) func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var cacheControl = fmt.Sprintf("public, max-age=%d", time.Minute/time.Second)
 
 	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -26,7 +26,7 @@ func GetRepoHandler(githubClient *github.Client) func(w http.ResponseWriter, r *
 			return
 		}
 
-		var page int = 1
+		page := 1
 
 		if pageStr := ps.ByName("page"); len(pageStr) != 0 {
 			var err error

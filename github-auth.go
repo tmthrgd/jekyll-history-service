@@ -22,7 +22,7 @@ func (ga githubAuth) RoundTrip(req *http.Request) (*http.Response, error) {
 
 	if ga.Transport != nil {
 		return ga.Transport.RoundTrip(req)
-	} else {
-		return http.DefaultTransport.RoundTrip(req)
 	}
+
+	return http.DefaultTransport.RoundTrip(req)
 }
