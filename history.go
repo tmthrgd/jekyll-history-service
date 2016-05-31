@@ -32,10 +32,10 @@ import (
 var debug bool
 
 func main() {
+	flag.BoolVar(&debug, "debug", false, "do not delete temporary files")
+
 	var addr string
 	flag.StringVar(&addr, "addr", ":8080", "the address to listen on")
-
-	flag.BoolVar(&debug, "debug", false, "do not delete temporary files")
 
 	var highlightStyle string
 	flag.StringVar(&highlightStyle, "highlight-style", "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/styles/github-gist.min.css", "the highlight.js stylesheet")
