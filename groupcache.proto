@@ -5,10 +5,3 @@ message BuildJekyllResponse {
 	string error = 1;
 	int32 code = 2;
 }
-
-message BuiltFileResponse {
-	bytes data = 1;
-	int64 modTime = 2;
-	string error = 3;
-	int32 code = 4;
-}

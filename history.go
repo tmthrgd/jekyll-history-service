@@ -22,6 +22,8 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/julienschmidt/httprouter"
 	"github.com/keep94/weblogs"
+	"github.com/mitchellh/goamz/aws"
+	"github.com/mitchellh/goamz/s3"
 )
 
 //go:generate go-bindata -nomemcopy -nocompress assets/... views/...
@@ -42,26 +44,47 @@ func main() {
 
 	fmt.Println(fullVersionStr)
 
-	tmp, err := ioutil.TempDir("", "jklhstry.")
+	tmpSrc, err := ioutil.TempDir("", "jklhstry.")
 	if err != nil {
 		panic(err)
 	}
 
 	if debug {
-		fmt.Printf("repositories will be dowloaded into '%s'\n", tmp)
+		fmt.Printf("repositories will be dowloaded into '%s'\n", tmpSrc)
 	} else {
-		defer os.RemoveAll(tmp)
+		defer os.RemoveAll(tmpSrc)
 	}
 
-	dest, err := ioutil.TempDir("", "jklhstry.")
+	tmpDest, err := ioutil.TempDir("", "jklhstry.")
 	if err != nil {
 		panic(err)
 	}
 
 	if debug {
-		fmt.Printf("site will be built into '%s'\n", dest)
+		fmt.Printf("site will be built into '%s'\n", tmpDest)
 	} else {
-		defer os.RemoveAll(dest)
+		defer os.RemoveAll(tmpDest)
+	}
+
+	var s3Bucket *s3.Bucket
+
+	bucket := os.Getenv("S3_BUCKET")
+	endpoint := os.Getenv("S3_ENDPOINT")
+	if len(bucket) != 0 && len(endpoint) != 0 {
+		region, ok := aws.Regions[endpoint]
+		if !ok {
+			panic(fmt.Errorf("invalid S3_ENDPOINT value of %s", endpoint))
+		}
+
+		auth, err := aws.EnvAuth()
+		if err != nil {
+			panic(err)
+		}
+
+		s3Client := s3.New(auth, region)
+		s3Bucket = s3Client.Bucket(bucket)
+	} else {
+		panic("both S3_BUCKET and S3_ENDPOINT must be set")
 	}
 
 	clientTr := httpcache.NewMemoryCacheTransport()
@@ -80,13 +103,12 @@ func main() {
 	githubClient.UserAgent = fullVersionStr
 
 	buildJekyll := groupcache.NewGroup("build-jekyll", 1<<20, buildJekyllGetter{
-		RepoBasePath: tmp,
-		SiteBasePath: dest,
+		RepoBasePath: tmpSrc,
+		SiteBasePath: tmpDest,
+
+		S3Bucket: s3Bucket,
 
 		GithubClient: githubClient,
-	})
-	builtFiles := groupcache.NewGroup("built-file", 1<<20, builtFileGetter{
-		SiteBasePath: dest,
 	})
 
 	castagnoli := crc32.MakeTable(crc32.Castagnoli)
@@ -144,7 +166,7 @@ func main() {
 
 	hs := new(hostSwitch)
 	hs.NotFound = &repoSwitch{
-		BuiltFiles: builtFiles,
+		S3Bucket: s3Bucket,
 	}
 
 	hs.Add("jekyllhistory.com", hostRedirector{

@@ -6,16 +6,18 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
+	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/golang/groupcache"
+	"github.com/mitchellh/goamz/s3"
 )
 
 var (
@@ -27,7 +29,7 @@ var (
 )
 
 type repoSwitch struct {
-	BuiltFiles *groupcache.Group
+	S3Bucket *s3.Bucket
 }
 
 func (rs repoSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -44,18 +46,6 @@ func (rs repoSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	tag := strings.ToLower(m[1])
 
-	switch r.Method {
-	case http.MethodGet:
-	case http.MethodHead:
-	case http.MethodOptions:
-		w.Header().Set("Allow", http.MethodGet+", "+http.MethodHead+", "+http.MethodOptions)
-		w.WriteHeader(http.StatusOK)
-		return
-	default:
-		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-		return
-	}
-
 	if strings.HasSuffix(r.URL.Path, "/index.html") {
 		localRedirect(w, r, "./")
 		return
@@ -69,30 +59,104 @@ func (rs repoSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var resp BuiltFileResponse
-
-	if err := rs.BuiltFiles.Get(nil, tag+"\x00"+r.URL.Path, groupcache.ProtoSink(&resp)); err != nil || len(resp.Error) != 0 {
-		h.Del("Cache-Control")
-		h.Del("Etag")
-
-		if err != nil {
-			log.Printf("%[1]T %[1]v", err)
-			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		} else if resp.Code == http.StatusNotFound && len(resp.Data) != 0 {
-			w.WriteHeader(int(resp.Code))
-			w.Write(resp.Data)
-		} else {
-			log.Println(resp.Error)
-
-			if resp.Code != 0 {
-				http.Error(w, http.StatusText(int(resp.Code)), int(resp.Code))
-			} else {
-				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-			}
-		}
-
+	if filepath.Separator != '/' && strings.IndexRune(r.URL.Path, filepath.Separator) >= 0 || strings.Contains(r.URL.Path, "\x00") {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
-	http.ServeContent(w, r, r.URL.Path, time.Unix(resp.ModTime, 0), bytes.NewReader(resp.Data))
+	name := r.URL.Path
+
+	if strings.HasSuffix(name, "/") {
+		name += "/index.html"
+	}
+
+	basePath := filepath.Join(tag[0:1], tag[1:2], tag[2:])
+	fullPath := filepath.Join(basePath, filepath.FromSlash(path.Clean("/"+name)))
+
+	switch r.Method {
+	case http.MethodGet:
+		resp, err := rs.S3Bucket.GetResponse(fullPath)
+
+		if err == nil {
+			for _, k := range [...]string{"Content-Length", "Content-Type", "Last-Modified"} {
+				for _, v := range resp.Header[k] {
+					h.Add(k, v)
+				}
+			}
+
+			w.WriteHeader(resp.StatusCode)
+
+			io.Copy(w, resp.Body)
+			resp.Body.Close()
+			return
+		}
+
+		s3err, ok := err.(*s3.Error)
+		if !ok {
+			log.Printf("%[1]T: %[1]v", err)
+
+			h.Del("Etag")
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		if s3err.StatusCode != 404 {
+			log.Printf("%[1]T: %[1]v", err)
+
+			h.Del("Etag")
+			http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+			return
+		}
+
+		reader, err := rs.S3Bucket.GetReader(filepath.Join(basePath, "/404.html"))
+		if err != nil {
+			if s3err, ok := err.(*s3.Error); ok && s3err.StatusCode != 404 {
+				log.Printf("%[1]T: %[1]v", err)
+
+				h.Del("Etag")
+			}
+
+			http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			return
+		}
+
+		for _, k := range [...]string{"Content-Length", "Content-Type"} {
+			for _, v := range resp.Header[k] {
+				h.Add(k, v)
+			}
+		}
+
+		w.WriteHeader(http.StatusNotFound)
+		io.Copy(w, reader)
+	case http.MethodHead:
+		resp, err := rs.S3Bucket.Head(fullPath)
+
+		if err == nil {
+			for _, k := range [...]string{"Content-Length", "Content-Type", "Last-Modified"} {
+				for _, v := range resp.Header[k] {
+					h.Add(k, v)
+				}
+			}
+
+			w.WriteHeader(resp.StatusCode)
+			return
+		}
+
+		if s3err, ok := err.(*s3.Error); ok {
+			if s3err.StatusCode == 404 {
+				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			} else {
+				log.Printf("%[1]T: %[1]v", err)
+				http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+			}
+		} else {
+			log.Printf("%[1]T: %[1]v", err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+	case http.MethodOptions:
+		w.Header().Set("Allow", http.MethodGet+", "+http.MethodHead+", "+http.MethodOptions)
+		w.WriteHeader(http.StatusOK)
+	default:
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+	}
 }

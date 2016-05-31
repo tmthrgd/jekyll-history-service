@@ -11,20 +11,27 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"mime"
 	"net/http"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/golang/groupcache"
 	"github.com/google/go-github/github"
+	"github.com/mitchellh/goamz/s3"
 )
+
+const sniffLen = 512
 
 type buildJekyllGetter struct {
 	RepoBasePath string
 	SiteBasePath string
+
+	S3Bucket *s3.Bucket
 
 	GithubClient *github.Client
 	HTTPClient   *http.Client
@@ -42,11 +49,14 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 
 	tag, user, repo, commit := parts[0], parts[1], parts[2], parts[3]
 
-	repoPath := filepath.Join(bj.RepoBasePath, tag[0:1], tag[1:2], tag[2:])
-	sitePath := filepath.Join(bj.SiteBasePath, tag[0:1], tag[1:2], tag[2:])
+	basePath := filepath.Join(tag[0:1], tag[1:2], tag[2:])
+	repoPath := filepath.Join(bj.RepoBasePath, basePath)
+	sitePath := filepath.Join(bj.SiteBasePath, basePath)
 
-	if _, err := os.Stat(sitePath); err == nil {
+	if list, err := bj.S3Bucket.List(basePath, "/", "", 1); err == nil && len(list.CommonPrefixes) != 0 {
 		return dest.SetProto(&resp)
+	} else if err != nil {
+		log.Printf("%[1]T: %[1]v", err)
 	}
 
 	if _, err := os.Stat(repoPath); err != nil {
@@ -168,12 +178,54 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 		}
 	}
 
-	cmd := exec.Command("jekyll", "build", "--no-watch", "--quiet", "--safe", "-s", repoPath, "-d", sitePath)
-	cmd.Dir = repoPath
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	if _, err := os.Stat(sitePath); err != nil {
+		if !debug {
+			defer os.RemoveAll(sitePath)
+		}
 
-	if err := cmd.Run(); err != nil {
+		cmd := exec.Command("jekyll", "build", "--no-watch", "--quiet", "--safe", "-s", repoPath, "-d", sitePath)
+		cmd.Dir = repoPath
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		if err := cmd.Run(); err != nil {
+			resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
+			return dest.SetProto(&resp)
+		}
+	}
+
+	if err := filepath.Walk(sitePath, func(filePath string, info os.FileInfo, err error) error {
+		if info.IsDir() {
+			return nil
+		}
+
+		f, err := os.Open(filePath)
+		if err != nil {
+			return err
+		}
+
+		ctype := mime.TypeByExtension(filepath.Ext(filePath))
+		if len(ctype) == 0 {
+			// read a chunk to decide between utf-8 text and binary
+			var buf [sniffLen]byte
+			n, _ := io.ReadFull(f, buf[:])
+
+			ctype = http.DetectContentType(buf[:n])
+
+			if _, err := f.Seek(0, os.SEEK_SET); err != nil {
+				f.Close()
+				return err
+			}
+		}
+
+		err = bj.S3Bucket.PutReaderHeader(path.Clean("/"+filePath[len(bj.SiteBasePath):]), f, info.Size(), map[string][]string{
+			"Cache-Control":       {builtRepoCacheControl},
+			"Content-Type":        {ctype},
+			"x-amz-storage-class": {"REDUCED_REDUNDANCY"},
+		}, "")
+		f.Close()
+		return err
+	}); err != nil {
 		resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
 	}
 
