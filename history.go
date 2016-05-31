@@ -37,6 +37,9 @@ func main() {
 	var addr string
 	flag.StringVar(&addr, "addr", ":8080", "the address to listen on")
 
+	var jekyll string
+	flag.StringVar(&jekyll, "jekyll", "shell", "the method to run jekyll (shell)")
+
 	var highlightStyle string
 	flag.StringVar(&highlightStyle, "highlight-style", "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/styles/github-gist.min.css", "the highlight.js stylesheet")
 
@@ -116,8 +119,19 @@ func main() {
 	githubClient := github.NewClient(githubClientTr.Client())
 	githubClient.UserAgent = fullVersionStr
 
+	var executeJekyll func(src, dst string) error
+
+	switch jekyll {
+	case "shell":
+		executeJekyll = executeShellJekyll
+	default:
+		panic(fmt.Errorf("invalid -jekyll flag value of '%s'", jekyll))
+	}
+
 	buildJekyll := groupcache.NewGroup("build-jekyll", 1<<20, buildJekyllGetter{
 		TempDirectory: tmp,
+
+		ExecuteJekyll: executeJekyll,
 
 		S3Bucket: s3Bucket,
 
