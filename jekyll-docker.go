@@ -30,7 +30,8 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 
 		Image string
 
-		Env []string
+		Env  []string
+		Args []string
 
 		TLS struct {
 			CACert string
@@ -102,6 +103,20 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 		return nil, err
 	}
 
+	cmd := strslice.StrSlice{"jekyll", "build", "--no-watch", "-s", "/source", "-d", "/destination"}
+
+	if debug {
+		cmd = append(cmd, "--trace", "--verbose")
+	}
+
+	if !verbose {
+		cmd = append(cmd, "--quiet")
+	}
+
+	if opts.Args != nil {
+		cmd = append(cmd, opts.Args...)
+	}
+
 	seenWarnings := make(map[string]struct{})
 	var seenWarningsMu sync.Mutex
 
@@ -112,7 +127,7 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 
 			Env: opts.Env,
 
-			Cmd: strslice.StrSlice{"jekyll", "build", "--no-watch", "--quiet", "-s", "/source", "-d", "/destination"},
+			Cmd: cmd,
 
 			Image: opts.Image,
 
