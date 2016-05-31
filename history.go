@@ -85,11 +85,22 @@ func main() {
 		s3Bucket = s3.New(auth, region).Bucket(bucket)
 		s3BucketNoGzip = s3.New(auth, region).Bucket(bucket)
 
-		noGzipTransport := *(http.DefaultTransport.(*http.Transport))
-		noGzipTransport.DisableCompression = true
-		noGzipClient := &http.Client{
-			Transport: &noGzipTransport,
+		clientTr := httpcache.NewMemoryCacheTransport()
+		clientTr.MarkCachedResponses = true
+
+		client := clientTr.Client()
+		s3Bucket.S3.HTTPClient = func() *http.Client {
+			return client
 		}
+
+		noGzipClientTr := httpcache.NewMemoryCacheTransport()
+		noGzipClientTr.MarkCachedResponses = true
+
+		noGzipTransport := *http.DefaultTransport.(*http.Transport)
+		noGzipTransport.DisableCompression = true
+		noGzipClientTr.Transport = &noGzipTransport
+
+		noGzipClient := noGzipClientTr.Client()
 		s3BucketNoGzip.S3.HTTPClient = func() *http.Client {
 			return noGzipClient
 		}
@@ -97,11 +108,12 @@ func main() {
 		panic("both S3_BUCKET and S3_ENDPOINT must be set")
 	}
 
-	clientTr := httpcache.NewMemoryCacheTransport()
+	githubClientTr := httpcache.NewMemoryCacheTransport()
+	githubClientTr.MarkCachedResponses = true
 
 	id := os.Getenv("GITHUB_CLIENT_ID")
 	if secret := os.Getenv("GITHUB_CLIENT_SECRET"); len(id) != 0 && len(secret) != 0 {
-		clientTr.Transport = &githubAuth{
+		githubClientTr.Transport = &githubAuth{
 			ID:     id,
 			Secret: secret,
 		}
@@ -109,7 +121,7 @@ func main() {
 		panic("both GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET must be set")
 	}
 
-	githubClient := github.NewClient(clientTr.Client())
+	githubClient := github.NewClient(githubClientTr.Client())
 	githubClient.UserAgent = fullVersionStr
 
 	buildJekyll := groupcache.NewGroup("build-jekyll", 1<<20, buildJekyllGetter{
