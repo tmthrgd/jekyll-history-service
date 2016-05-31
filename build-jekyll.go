@@ -75,7 +75,7 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 		return dest.SetProto(&resp)
 	}
 
-	if debug {
+	if verbose {
 		log.Printf("GitHub API Rate Limit is %d remaining of %d, to be reset at %s\n", gresp.Remaining, gresp.Limit, gresp.Reset)
 	}
 

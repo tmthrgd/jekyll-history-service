@@ -170,7 +170,7 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 		}
 
 		if logs, err := api.ContainerLogs(context.Background(), resp.ID, types.ContainerLogsOptions{
-			ShowStdout: true,
+			ShowStdout: verbose,
 			ShowStderr: true,
 
 			Timestamps: true,

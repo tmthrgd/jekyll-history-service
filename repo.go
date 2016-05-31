@@ -56,7 +56,7 @@ func getRepoHandler(githubClient *github.Client) func(w http.ResponseWriter, r *
 			return
 		}
 
-		if debug {
+		if verbose {
 			log.Printf("GitHub API Rate Limit is %d remaining of %d, to be reset at %s\n", resp.Remaining, resp.Limit, resp.Reset)
 		}
 

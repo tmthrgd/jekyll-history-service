@@ -41,7 +41,7 @@ func getCommitHandler(githubClient *github.Client, highlightStyle string) func(w
 			return
 		}
 
-		if debug {
+		if verbose {
 			log.Printf("GitHub API Rate Limit is %d remaining of %d, to be reset at %s\n", resp.Remaining, resp.Limit, resp.Reset)
 		}
 

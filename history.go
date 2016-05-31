@@ -30,9 +30,11 @@ import (
 //go:generate protoc --go_out=. groupcache.proto
 
 var debug bool
+var verbose bool
 
 func main() {
 	flag.BoolVar(&debug, "debug", false, "do not delete temporary files")
+	flag.BoolVar(&verbose, "verbose", false, "log more information than normal")
 
 	var addr string
 	flag.StringVar(&addr, "addr", ":8080", "the address to listen on")
@@ -55,10 +57,12 @@ func main() {
 		panic(err)
 	}
 
-	if debug {
-		fmt.Printf("using temp directory '%s'\n", tmp)
-	} else {
+	if !debug {
 		defer os.RemoveAll(tmp)
+	}
+
+	if verbose {
+		fmt.Printf("using temp directory '%s'\n", tmp)
 	}
 
 	var s3Bucket *s3.Bucket
@@ -227,7 +231,7 @@ func main() {
 		hs.ServeHTTP(w, r)
 	})
 
-	if debug {
+	if verbose {
 		router = weblogs.HandlerWithOptions(router, &weblogs.Options{
 			Logger: debugLogger{},
 		})
