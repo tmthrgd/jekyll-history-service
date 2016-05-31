@@ -29,6 +29,8 @@ const sniffLen = 512
 type buildJekyllGetter struct {
 	TempDirectory string
 
+	ExecuteJekyll func(src, dst string) error
+
 	S3Bucket *s3.Bucket
 
 	GithubClient *github.Client
@@ -177,7 +179,12 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 		}
 	}
 
-	if err := executeShellJekyll(repoPath, sitePath); err != nil {
+	executeJekyll := bj.ExecuteJekyll
+	if executeJekyll == nil {
+		executeJekyll = executeShellJekyll
+	}
+
+	if err := executeJekyll(repoPath, sitePath); err != nil {
 		resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
 		return dest.SetProto(&resp)
 	}
