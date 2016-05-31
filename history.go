@@ -38,7 +38,7 @@ func main() {
 	flag.StringVar(&addr, "addr", ":8080", "the address to listen on")
 
 	var jekyll string
-	flag.StringVar(&jekyll, "jekyll", "shell", "the method to run jekyll (shell)")
+	flag.StringVar(&jekyll, "jekyll", "shell", "the method to run jekyll (shell, shell-unsafe)")
 
 	var highlightStyle string
 	flag.StringVar(&highlightStyle, "highlight-style", "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/styles/github-gist.min.css", "the highlight.js stylesheet")
@@ -124,6 +124,8 @@ func main() {
 	switch jekyll {
 	case "shell":
 		executeJekyll = executeShellJekyll
+	case "shell-unsafe":
+		executeJekyll = executeShellJekyllUnsafe
 	default:
 		panic(fmt.Errorf("invalid -jekyll flag value of '%s'", jekyll))
 	}

@@ -17,3 +17,11 @@ func executeShellJekyll(src, dst string) error {
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
 }
+
+func executeShellJekyllUnsafe(src, dst string) error {
+	cmd := exec.Command("jekyll", "build", "--no-watch", "--quiet", "-s", src, "-d", dst)
+	cmd.Dir = src
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
