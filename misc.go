@@ -8,6 +8,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"strconv"
 	"sync"
 )
@@ -16,6 +17,18 @@ var bufferPool = &sync.Pool{
 	New: func() interface{} {
 		return new(bytes.Buffer)
 	},
+}
+
+func copyBuffer(dst io.Writer, src io.Reader) (written int64, err error) {
+	buf := bufferPool.Get().(*bytes.Buffer)
+
+	buf.Reset()
+	buf.Grow(32 * 1024)
+
+	written, err = io.CopyBuffer(dst, src, buf.Bytes()[:buf.Cap()])
+
+	bufferPool.Put(buf)
+	return
 }
 
 func parsePageString(page string) (int, bool, error) {

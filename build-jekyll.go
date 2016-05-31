@@ -157,7 +157,7 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 				return dest.SetProto(&resp)
 			}
 
-			_, err = io.Copy(file, tarReader)
+			_, err = copyBuffer(file, tarReader)
 			file.Close()
 
 			if err != nil {
@@ -231,7 +231,7 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 
 			gzw := gzip.NewWriter(buf)
 
-			if _, err := io.Copy(gzw, f); err != nil {
+			if _, err := copyBuffer(gzw, f); err != nil {
 				return err
 			}
 

@@ -8,7 +8,6 @@ package main
 import (
 	"compress/gzip"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"net/http"
@@ -223,7 +222,7 @@ func (repoSwitch) serveS3Response(w http.ResponseWriter, r *http.Request, resp *
 
 			w.WriteHeader(code)
 
-			io.Copy(w, gr)
+			copyBuffer(w, gr)
 			gr.Close()
 			resp.Body.Close()
 			return nil
@@ -240,7 +239,7 @@ func (repoSwitch) serveS3Response(w http.ResponseWriter, r *http.Request, resp *
 		return nil
 	}
 
-	io.Copy(w, resp.Body)
+	copyBuffer(w, resp.Body)
 	resp.Body.Close()
 	return nil
 }
