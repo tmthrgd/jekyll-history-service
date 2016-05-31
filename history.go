@@ -44,26 +44,15 @@ func main() {
 
 	fmt.Println(fullVersionStr)
 
-	tmpSrc, err := ioutil.TempDir("", "jklhstry.")
+	tmp, err := ioutil.TempDir("", "jklhstry.")
 	if err != nil {
 		panic(err)
 	}
 
 	if debug {
-		fmt.Printf("repositories will be dowloaded into '%s'\n", tmpSrc)
+		fmt.Printf("using temp directory '%s'\n", tmp)
 	} else {
-		defer os.RemoveAll(tmpSrc)
-	}
-
-	tmpDest, err := ioutil.TempDir("", "jklhstry.")
-	if err != nil {
-		panic(err)
-	}
-
-	if debug {
-		fmt.Printf("site will be built into '%s'\n", tmpDest)
-	} else {
-		defer os.RemoveAll(tmpDest)
+		defer os.RemoveAll(tmp)
 	}
 
 	var s3Bucket *s3.Bucket
@@ -128,8 +117,7 @@ func main() {
 	githubClient.UserAgent = fullVersionStr
 
 	buildJekyll := groupcache.NewGroup("build-jekyll", 1<<20, buildJekyllGetter{
-		RepoBasePath: tmpSrc,
-		SiteBasePath: tmpDest,
+		TempDirectory: tmp,
 
 		S3Bucket: s3Bucket,
 

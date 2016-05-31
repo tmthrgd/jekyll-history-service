@@ -16,7 +16,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -29,8 +28,7 @@ import (
 const sniffLen = 512
 
 type buildJekyllGetter struct {
-	RepoBasePath string
-	SiteBasePath string
+	TempDirectory string
 
 	S3Bucket *s3.Bucket
 
@@ -50,149 +48,144 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 
 	tag, user, repo, commit := parts[0], parts[1], parts[2], parts[3]
 
-	basePath := filepath.Join(tag[0:1], tag[1:2], tag[2:])
-	repoPath := filepath.Join(bj.RepoBasePath, basePath)
-	sitePath := filepath.Join(bj.SiteBasePath, basePath)
+	tagPath := filepath.Join(tag[0:1], tag[1:2], tag[2:])
 
-	if list, err := bj.S3Bucket.List(basePath, "/", "", 1); err == nil && len(list.CommonPrefixes) != 0 {
+	basePath := filepath.Join(bj.TempDirectory, tagPath)
+
+	if !debug {
+		defer os.RemoveAll(basePath)
+	}
+
+	repoPath := filepath.Join(basePath, "repo")
+	sitePath := filepath.Join(basePath, "site")
+
+	if list, err := bj.S3Bucket.List(tagPath, "/", "", 1); err == nil && len(list.CommonPrefixes) != 0 {
 		return dest.SetProto(&resp)
 	} else if err != nil {
 		log.Printf("%[1]T: %[1]v", err)
 	}
 
-	if _, err := os.Stat(repoPath); err != nil {
-		u, gresp, err := bj.GithubClient.Repositories.GetArchiveLink(user, repo, github.Tarball, &github.RepositoryContentGetOptions{
-			Ref: commit,
-		})
+	u, gresp, err := bj.GithubClient.Repositories.GetArchiveLink(user, repo, github.Tarball, &github.RepositoryContentGetOptions{
+		Ref: commit,
+	})
+	if err != nil {
+		resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
+		resp.Code = http.StatusBadGateway
+		return dest.SetProto(&resp)
+	}
+
+	if debug {
+		log.Printf("GitHub API Rate Limit is %d remaining of %d, to be reset at %s\n", gresp.Remaining, gresp.Limit, gresp.Reset)
+	}
+
+	if u == nil {
+		resp.Error = "not found"
+		resp.Code = http.StatusNotFound
+		return dest.SetProto(&resp)
+	}
+
+	client := bj.HTTPClient
+	if client == nil {
+		client = http.DefaultClient
+	}
+
+	hresp, err := client.Do(&http.Request{
+		URL:  u,
+		Host: u.Host,
+		Header: http.Header{
+			"User-Agent": []string{fullVersionStr},
+		},
+	})
+	if err != nil {
+		resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
+		resp.Code = http.StatusBadGateway
+		return dest.SetProto(&resp)
+	}
+
+	if hresp.Body == nil {
+		resp.Error = "(*http.Client).Do did not return body"
+		return dest.SetProto(&resp)
+	}
+
+	defer hresp.Body.Close()
+
+	reader, err := gzip.NewReader(hresp.Body)
+	if err != nil {
+		return err
+	}
+
+	defer reader.Close()
+
+	tarReader := tar.NewReader(reader)
+
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
+			return dest.SetProto(&resp)
+		}
+
+		idx := strings.IndexRune(header.Name, filepath.Separator)
+		if idx == -1 {
+			continue
+		}
+
+		path := filepath.Join(repoPath, header.Name[idx+1:])
+
+		info := header.FileInfo()
+		mode := info.Mode()
+
+		if info.IsDir() {
+			if err = os.MkdirAll(path, mode); err != nil {
+				resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
+				return dest.SetProto(&resp)
+			}
+
+			continue
+		}
+
+		if mode&(os.ModeSymlink|os.ModeNamedPipe|os.ModeSocket|os.ModeDevice) != 0 {
+			log.Printf("tar file '%s' has invalid mode: %d", header.Name, mode)
+			continue
+		}
+
+		file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, mode)
 		if err != nil {
 			resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
-			resp.Code = http.StatusBadGateway
 			return dest.SetProto(&resp)
 		}
 
-		if debug {
-			log.Printf("GitHub API Rate Limit is %d remaining of %d, to be reset at %s\n", gresp.Remaining, gresp.Limit, gresp.Reset)
-		}
+		_, err = copyBuffer(file, tarReader)
+		file.Close()
 
-		if u == nil {
-			resp.Error = "not found"
-			resp.Code = http.StatusNotFound
-			return dest.SetProto(&resp)
-		}
-
-		client := bj.HTTPClient
-		if client == nil {
-			client = http.DefaultClient
-		}
-
-		hresp, err := client.Do(&http.Request{
-			URL:  u,
-			Host: u.Host,
-			Header: http.Header{
-				"User-Agent": []string{fullVersionStr},
-			},
-		})
 		if err != nil {
 			resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
-			resp.Code = http.StatusBadGateway
 			return dest.SetProto(&resp)
 		}
 
-		if hresp.Body == nil {
-			resp.Error = "(*http.Client).Do did not return body"
-			return dest.SetProto(&resp)
-		}
+		if !header.ModTime.IsZero() && !header.ModTime.Equal(unixEpochTime) {
+			access := header.AccessTime
 
-		defer hresp.Body.Close()
-
-		reader, err := gzip.NewReader(hresp.Body)
-		if err != nil {
-			return err
-		}
-
-		defer reader.Close()
-
-		if !debug {
-			defer os.RemoveAll(repoPath)
-		}
-
-		tarReader := tar.NewReader(reader)
-
-		for {
-			header, err := tarReader.Next()
-			if err == io.EOF {
-				break
-			} else if err != nil {
-				resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
-				return dest.SetProto(&resp)
+			if access.IsZero() || access.Equal(unixEpochTime) {
+				access = time.Now()
 			}
 
-			idx := strings.IndexRune(header.Name, filepath.Separator)
-			if idx == -1 {
-				continue
-			}
-
-			path := filepath.Join(repoPath, header.Name[idx+1:])
-
-			info := header.FileInfo()
-			mode := info.Mode()
-
-			if info.IsDir() {
-				if err = os.MkdirAll(path, mode); err != nil {
-					resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
-					return dest.SetProto(&resp)
-				}
-
-				continue
-			}
-
-			if mode&(os.ModeSymlink|os.ModeNamedPipe|os.ModeSocket|os.ModeDevice) != 0 {
-				log.Printf("tar file '%s' has invalid mode: %d", header.Name, mode)
-				continue
-			}
-
-			file, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, mode)
-			if err != nil {
-				resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
-				return dest.SetProto(&resp)
-			}
-
-			_, err = copyBuffer(file, tarReader)
-			file.Close()
-
-			if err != nil {
-				resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
-				return dest.SetProto(&resp)
-			}
-
-			if !header.ModTime.IsZero() && !header.ModTime.Equal(unixEpochTime) {
-				access := header.AccessTime
-
-				if access.IsZero() || access.Equal(unixEpochTime) {
-					access = time.Now()
-				}
-
-				if err := os.Chtimes(path, access, header.ModTime); err != nil {
-					log.Printf("%[1]T: %[1]v", err)
-				}
+			if err := os.Chtimes(path, access, header.ModTime); err != nil {
+				log.Printf("%[1]T: %[1]v", err)
 			}
 		}
 	}
 
-	if _, err := os.Stat(sitePath); err != nil {
-		if !debug {
-			defer os.RemoveAll(sitePath)
-		}
+	cmd := exec.Command("jekyll", "build", "--no-watch", "--quiet", "--safe", "-s", repoPath, "-d", sitePath)
+	cmd.Dir = repoPath
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
-		cmd := exec.Command("jekyll", "build", "--no-watch", "--quiet", "--safe", "-s", repoPath, "-d", sitePath)
-		cmd.Dir = repoPath
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-
-		if err := cmd.Run(); err != nil {
-			resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
-			return dest.SetProto(&resp)
-		}
+	if err := cmd.Run(); err != nil {
+		resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
+		return dest.SetProto(&resp)
 	}
 
 	if err := filepath.Walk(sitePath, func(filePath string, info os.FileInfo, err error) error {
@@ -248,7 +241,7 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 			}
 		}
 
-		err = bj.S3Bucket.PutReaderHeader(path.Clean("/"+filePath[len(bj.SiteBasePath):]), r, size, map[string][]string{
+		err = bj.S3Bucket.PutReaderHeader(filepath.Join(tagPath, filePath[len(repoPath):]), r, size, map[string][]string{
 			"Cache-Control":       {builtRepoCacheControl},
 			"Content-Encoding":    encoding,
 			"Content-Type":        {ctype},
