@@ -142,6 +142,10 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 			return err
 		}
 
+		if !debug {
+			defer api.ContainerRemove(context.Background(), resp.ID, types.ContainerRemoveOptions{})
+		}
+
 		if len(resp.Warnings) != 0 {
 			seenWarningsMu.Lock()
 
@@ -226,10 +230,6 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 		code, err := api.ContainerWait(context.Background(), resp.ID)
 		if err != nil {
 			return err
-		}
-
-		if !debug {
-			api.ContainerRemove(context.Background(), resp.ID, types.ContainerRemoveOptions{})
 		}
 
 		if code != 0 {
