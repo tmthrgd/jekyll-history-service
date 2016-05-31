@@ -199,6 +199,10 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 			return nil
 		}
 
+		if info.Mode()&(os.ModeDir|os.ModeSymlink|os.ModeNamedPipe|os.ModeSocket|os.ModeDevice) != 0 {
+			return &os.PathError{Op: "open", Path: filePath, Err: errors.New("not a regular file")}
+		}
+
 		f, err := os.Open(filePath)
 		if err != nil {
 			return err
