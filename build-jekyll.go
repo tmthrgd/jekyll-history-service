@@ -243,6 +243,8 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 				r = buf
 				size = bufLen
 				encoding = []string{"gzip"}
+			} else if _, err := f.Seek(0, os.SEEK_SET); err != nil {
+				return err
 			}
 		}
 
