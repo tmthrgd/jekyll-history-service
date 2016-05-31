@@ -67,6 +67,7 @@ func main() {
 	}
 
 	var s3Bucket *s3.Bucket
+	var s3BucketNoGzip *s3.Bucket
 
 	bucket := os.Getenv("S3_BUCKET")
 	endpoint := os.Getenv("S3_ENDPOINT")
@@ -81,8 +82,17 @@ func main() {
 			panic(err)
 		}
 
-		s3Client := s3.New(auth, region)
-		s3Bucket = s3Client.Bucket(bucket)
+		s3Bucket = s3.New(auth, region).Bucket(bucket)
+		s3BucketNoGzip = s3.New(auth, region).Bucket(bucket)
+
+		noGzipTransport := *(http.DefaultTransport.(*http.Transport))
+		noGzipTransport.DisableCompression = true
+		noGzipClient := &http.Client{
+			Transport: &noGzipTransport,
+		}
+		s3BucketNoGzip.S3.HTTPClient = func() *http.Client {
+			return noGzipClient
+		}
 	} else {
 		panic("both S3_BUCKET and S3_ENDPOINT must be set")
 	}
@@ -166,7 +176,7 @@ func main() {
 
 	hs := new(hostSwitch)
 	hs.NotFound = &repoSwitch{
-		S3Bucket: s3Bucket,
+		S3Bucket: s3BucketNoGzip,
 	}
 
 	hs.Add("jekyllhistory.com", hostRedirector{

@@ -7,6 +7,7 @@ package main
 
 import (
 	"archive/tar"
+	"bytes"
 	"compress/gzip"
 	"fmt"
 	"io"
@@ -218,8 +219,36 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 			}
 		}
 
-		err = bj.S3Bucket.PutReaderHeader(path.Clean("/"+filePath[len(bj.SiteBasePath):]), f, info.Size(), map[string][]string{
+		size := info.Size()
+
+		var r io.Reader = f
+		var encoding []string
+
+		if size > 1024 {
+			buf := bufferPool.Get().(*bytes.Buffer)
+			defer bufferPool.Put(buf)
+			buf.Reset()
+
+			gzw := gzip.NewWriter(buf)
+
+			if _, err := io.Copy(gzw, f); err != nil {
+				return err
+			}
+
+			if err := gzw.Close(); err != nil {
+				return err
+			}
+
+			if bufLen := int64(buf.Len()); bufLen < size {
+				r = buf
+				size = bufLen
+				encoding = []string{"gzip"}
+			}
+		}
+
+		err = bj.S3Bucket.PutReaderHeader(path.Clean("/"+filePath[len(bj.SiteBasePath):]), r, size, map[string][]string{
 			"Cache-Control":       {builtRepoCacheControl},
+			"Content-Encoding":    encoding,
 			"Content-Type":        {ctype},
 			"x-amz-storage-class": {"REDUCED_REDUNDANCY"},
 		}, "")

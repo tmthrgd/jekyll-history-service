@@ -6,6 +6,7 @@
 package main
 
 import (
+	"compress/gzip"
 	"fmt"
 	"io"
 	"log"
@@ -84,10 +85,13 @@ func (rs repoSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			w.WriteHeader(resp.StatusCode)
+			if err = rs.serveS3Response(w, r, resp, resp.StatusCode); err != nil {
+				log.Printf("%[1]T: %[1]v", err)
 
-			io.Copy(w, resp.Body)
-			resp.Body.Close()
+				h.Del("Etag")
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
+
 			return
 		}
 
@@ -108,7 +112,7 @@ func (rs repoSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		reader, err := rs.S3Bucket.GetReader(filepath.Join(basePath, "/404.html"))
+		resp, err = rs.S3Bucket.GetResponse(filepath.Join(basePath, "/404.html"))
 		if err != nil {
 			if s3err, ok := err.(*s3.Error); ok && s3err.StatusCode != 404 {
 				log.Printf("%[1]T: %[1]v", err)
@@ -126,8 +130,12 @@ func (rs repoSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		w.WriteHeader(http.StatusNotFound)
-		io.Copy(w, reader)
+		if err = rs.serveS3Response(w, r, resp, http.StatusNotFound); err != nil {
+			log.Printf("%[1]T: %[1]v", err)
+
+			h.Del("Etag")
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
 	case http.MethodHead:
 		resp, err := rs.S3Bucket.Head(fullPath)
 
@@ -159,4 +167,53 @@ func (rs repoSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
+}
+
+func (repoSwitch) serveS3Response(w http.ResponseWriter, r *http.Request, resp *http.Response, code int) error {
+	if encoding := strings.TrimSpace(resp.Header.Get("Content-Encoding")); strings.ToLower(encoding) == "gzip" {
+		h := w.Header()
+		h.Set("Vary", "Accept-Encoding")
+
+		canGzip := false
+
+		if accept := r.Header.Get("Accept-Encoding"); len(accept) != 0 {
+			for _, v := range strings.Split(accept, ",") {
+				if idx := strings.Index(v, ";"); idx != -1 {
+					v = v[:idx]
+				}
+
+				if strings.ToLower(strings.TrimSpace(v)) == "gzip" {
+					canGzip = true
+					break
+				}
+			}
+		}
+
+		if canGzip {
+			h.Set("Content-Encoding", "gzip")
+		} else {
+			h.Del("Content-Length")
+
+			gr, err := gzip.NewReader(resp.Body)
+			if err != nil {
+				return err
+			}
+
+			w.WriteHeader(code)
+
+			io.Copy(w, gr)
+			gr.Close()
+			resp.Body.Close()
+			return nil
+		}
+	} else if len(encoding) != 0 {
+		// unkown encoding
+		w.Header().Set("Content-Encoding", encoding)
+	}
+
+	w.WriteHeader(code)
+
+	io.Copy(w, resp.Body)
+	resp.Body.Close()
+	return nil
 }
