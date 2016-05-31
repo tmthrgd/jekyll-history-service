@@ -155,7 +155,13 @@ func (rs repoSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			w.WriteHeader(resp.StatusCode)
+			if err = rs.serveS3Response(w, r, resp, resp.StatusCode); err != nil {
+				log.Printf("%[1]T: %[1]v", err)
+
+				h.Del("Etag")
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
+
 			return
 		}
 
@@ -203,6 +209,13 @@ func (repoSwitch) serveS3Response(w http.ResponseWriter, r *http.Request, resp *
 		} else {
 			h.Del("Content-Length")
 
+			if r.Method == http.MethodHead {
+				w.WriteHeader(code)
+
+				resp.Body.Close()
+				return nil
+			}
+
 			gr, err := gzip.NewReader(resp.Body)
 			if err != nil {
 				return err
@@ -221,6 +234,11 @@ func (repoSwitch) serveS3Response(w http.ResponseWriter, r *http.Request, resp *
 	}
 
 	w.WriteHeader(code)
+
+	if r.Method == http.MethodHead {
+		resp.Body.Close()
+		return nil
+	}
 
 	io.Copy(w, resp.Body)
 	resp.Body.Close()
