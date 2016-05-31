@@ -140,7 +140,7 @@ func (rs repoSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		resp, err := rs.S3Bucket.Head(fullPath)
 
 		if err == nil {
-			for _, k := range [...]string{"Content-Length", "Content-Type", "Last-Modified"} {
+			for _, k := range [...]string{"Content-Encoding", "Content-Length", "Content-Type", "Last-Modified"} {
 				for _, v := range resp.Header[k] {
 					h.Add(k, v)
 				}
