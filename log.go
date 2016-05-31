@@ -41,7 +41,7 @@ func (l debugLogger) Log(w io.Writer, log *weblogs.LogRecord) {
 	s := log.R.(debugLoggerSnapshot)
 	c := log.W.(*loggers.Capture)
 	fmt.Fprintf(w, "%s %s %s %s %s %d %d%s\n",
-		log.T.Format("01/02/2006 15:04:05"),
+		log.T.Format("02/01/2006 15:04:05"),
 		loggers.StripPort(s.RemoteAddr),
 		s.Method,
 		s.Host,
