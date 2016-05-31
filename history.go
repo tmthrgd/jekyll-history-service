@@ -69,9 +69,12 @@ func main() {
 	var s3Bucket *s3.Bucket
 	var s3BucketNoGzip *s3.Bucket
 
-	bucket := os.Getenv("S3_BUCKET")
 	endpoint := os.Getenv("S3_ENDPOINT")
-	if len(bucket) != 0 && len(endpoint) != 0 {
+	if len(endpoint) == 0 {
+		endpoint = "us-east-1"
+	}
+
+	if bucket := os.Getenv("S3_BUCKET"); len(bucket) != 0 {
 		region, ok := aws.Regions[endpoint]
 		if !ok {
 			panic(fmt.Errorf("invalid S3_ENDPOINT value of %s", endpoint))
@@ -105,7 +108,7 @@ func main() {
 			return noGzipClient
 		}
 	} else {
-		panic("both S3_BUCKET and S3_ENDPOINT must be set")
+		panic("S3_BUCKET must be set")
 	}
 
 	githubClientTr := httpcache.NewMemoryCacheTransport()

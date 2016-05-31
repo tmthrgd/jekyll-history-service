@@ -13,13 +13,17 @@ The following environment variables **must** be set before use:
 
 	AWS_ACCESS_KEY_ID=
 	AWS_SECRET_ACCESS_KEY=
+	
 	S3_BUCKET=
-	S3_ENDPOINT=
 
 The following environment variables **should** be set before use:
 
 	GITHUB_CLIENT_ID=
 	GITHUB_CLIENT_SECRET=
+	
+	S3_ENDPOINT=
+
+If not set, `S3_ENDPOINT` defaults to `us-east-1`.
 
 If a `.env` file exists in the working directory, environment variables will be read from it.
 
