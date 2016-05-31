@@ -30,6 +30,8 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 
 		Image string
 
+		Env []string
+
 		TLS struct {
 			CACert string
 			Cert   string
@@ -108,9 +110,7 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 			AttachStdout: true,
 			AttachStderr: true,
 
-			Env: []string{
-				"FORCE_APK_INSTALL=1",
-			},
+			Env: opts.Env,
 
 			Cmd: strslice.StrSlice{"jekyll", "build", "--no-watch", "--quiet", "-s", "/source", "-d", "/destination"},
 
