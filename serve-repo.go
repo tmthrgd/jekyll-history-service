@@ -79,10 +79,15 @@ func (rs repoSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		resp, err := rs.S3Bucket.GetResponse(fullPath)
 
 		if err == nil {
-			for _, k := range [...]string{"Content-Length", "Content-Type", "Last-Modified"} {
+			for _, k := range [...]string{"Content-Length", "Content-Type"} {
 				for _, v := range resp.Header[k] {
 					h.Add(k, v)
 				}
+			}
+
+			if modtime, err := time.Parse(http.TimeFormat, resp.Header.Get("Last-Modified")); err == nil && checkLastModified(w, r, modtime, 0) {
+				resp.Body.Close()
+				return
 			}
 
 			if err = rs.serveS3Response(w, r, resp, resp.StatusCode); err != nil {
@@ -140,10 +145,14 @@ func (rs repoSwitch) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		resp, err := rs.S3Bucket.Head(fullPath)
 
 		if err == nil {
-			for _, k := range [...]string{"Content-Encoding", "Content-Length", "Content-Type", "Last-Modified"} {
+			for _, k := range [...]string{"Content-Encoding", "Content-Length", "Content-Type"} {
 				for _, v := range resp.Header[k] {
 					h.Add(k, v)
 				}
+			}
+
+			if modtime, err := time.Parse(http.TimeFormat, resp.Header.Get("Last-Modified")); err == nil && checkLastModified(w, r, modtime, 0) {
+				return
 			}
 
 			w.WriteHeader(resp.StatusCode)
