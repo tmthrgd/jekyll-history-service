@@ -24,7 +24,9 @@ func getExecuteShellJekyll(optsflag string) (func(src, dst string) error, error)
 	opts := struct {
 		Env  []string
 		Args []string
-	}{}
+	}{
+		Env: []string{},
+	}
 
 	if len(optsflag) != 0 {
 		if err := json.Unmarshal([]byte(optsflag), &opts); err != nil {
@@ -58,7 +60,9 @@ func getExecuteShellJekyllUnsafe(optsflag string) (func(src, dst string) error, 
 	opts := struct {
 		Env  []string
 		Args []string
-	}{}
+	}{
+		Env: []string{},
+	}
 
 	if len(optsflag) != 0 {
 		if err := json.Unmarshal([]byte(optsflag), &opts); err != nil {
