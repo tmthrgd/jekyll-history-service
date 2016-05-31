@@ -130,9 +130,9 @@ func main() {
 
 	switch jekyll {
 	case "shell":
-		executeJekyll, err = executeShellJekyll, nil
+		executeJekyll, err = getExecuteShellJekyll(jekyllOpts)
 	case "shell-unsafe":
-		executeJekyll, err = executeShellJekyllUnsafe, nil
+		executeJekyll, err = getExecuteShellJekyllUnsafe(jekyllOpts)
 	case "docker":
 		executeJekyll, err = getExecuteDockerJekyll(jekyllOpts)
 	default:

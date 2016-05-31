@@ -6,22 +6,84 @@
 package main
 
 import (
+	"encoding/json"
 	"os"
 	"os/exec"
 )
 
-func executeShellJekyll(src, dst string) error {
-	cmd := exec.Command("jekyll", "build", "--no-watch", "--quiet", "--safe", "-s", src, "-d", dst)
-	cmd.Dir = src
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+var defaultExecuteJekyll func(src, dst string) error
+
+func init() {
+	var err error
+	if defaultExecuteJekyll, err = getExecuteShellJekyll(""); err != nil {
+		panic(err)
+	}
 }
 
-func executeShellJekyllUnsafe(src, dst string) error {
-	cmd := exec.Command("jekyll", "build", "--no-watch", "--quiet", "-s", src, "-d", dst)
-	cmd.Dir = src
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+func getExecuteShellJekyll(optsflag string) (func(src, dst string) error, error) {
+	opts := struct {
+		Env  []string
+		Args []string
+	}{}
+
+	if len(optsflag) != 0 {
+		if err := json.Unmarshal([]byte(optsflag), &opts); err != nil {
+			return nil, err
+		}
+	}
+
+	args := []string{"--no-watch", "--safe"}
+
+	if debug {
+		args = append(args, "--trace", "--verbose")
+	}
+
+	if !verbose {
+		args = append(args, "--quiet")
+	}
+
+	args = append(args, opts.Args...)
+
+	return func(src, dst string) error {
+		cmd := exec.Command("jekyll", append([]string{"build", "-s", src, "-d", dst}, args...)...)
+		cmd.Dir = src
+		cmd.Env = opts.Env
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		return cmd.Run()
+	}, nil
+}
+
+func getExecuteShellJekyllUnsafe(optsflag string) (func(src, dst string) error, error) {
+	opts := struct {
+		Env  []string
+		Args []string
+	}{}
+
+	if len(optsflag) != 0 {
+		if err := json.Unmarshal([]byte(optsflag), &opts); err != nil {
+			return nil, err
+		}
+	}
+
+	args := []string{"--no-watch"}
+
+	if debug {
+		args = append(args, "--trace", "--verbose")
+	}
+
+	if !verbose {
+		args = append(args, "--quiet")
+	}
+
+	args = append(args, opts.Args...)
+
+	return func(src, dst string) error {
+		cmd := exec.Command("jekyll", append([]string{"build", "-s", src, "-d", dst}, args...)...)
+		cmd.Dir = src
+		cmd.Env = opts.Env
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		return cmd.Run()
+	}, nil
 }

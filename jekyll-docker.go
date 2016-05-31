@@ -113,9 +113,7 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 		cmd = append(cmd, "--quiet")
 	}
 
-	if opts.Args != nil {
-		cmd = append(cmd, opts.Args...)
-	}
+	cmd = append(cmd, opts.Args...)
 
 	seenWarnings := make(map[string]struct{})
 	var seenWarningsMu sync.Mutex

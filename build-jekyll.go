@@ -181,7 +181,7 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 
 	executeJekyll := bj.ExecuteJekyll
 	if executeJekyll == nil {
-		executeJekyll = executeShellJekyll
+		executeJekyll = defaultExecuteJekyll
 	}
 
 	if err := executeJekyll(repoPath, sitePath); err != nil {
