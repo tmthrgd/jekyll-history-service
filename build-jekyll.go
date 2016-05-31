@@ -15,7 +15,6 @@ import (
 	"mime"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -178,12 +177,7 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 		}
 	}
 
-	cmd := exec.Command("jekyll", "build", "--no-watch", "--quiet", "--safe", "-s", repoPath, "-d", sitePath)
-	cmd.Dir = repoPath
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Run(); err != nil {
+	if err := executeShellJekyll(repoPath, sitePath); err != nil {
 		resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
 		return dest.SetProto(&resp)
 	}
