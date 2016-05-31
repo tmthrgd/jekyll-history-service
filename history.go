@@ -38,7 +38,10 @@ func main() {
 	flag.StringVar(&addr, "addr", ":8080", "the address to listen on")
 
 	var jekyll string
-	flag.StringVar(&jekyll, "jekyll", "shell", "the method to run jekyll (shell, shell-unsafe)")
+	flag.StringVar(&jekyll, "jekyll", "shell", "the method to run jekyll (shell, shell-unsafe, docker)")
+
+	var jekyllOpts string
+	flag.StringVar(&jekyllOpts, "jekyll-opts", "", "JSON encoded options to use when running jekyll")
 
 	var highlightStyle string
 	flag.StringVar(&highlightStyle, "highlight-style", "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/styles/github-gist.min.css", "the highlight.js stylesheet")
@@ -123,11 +126,17 @@ func main() {
 
 	switch jekyll {
 	case "shell":
-		executeJekyll = executeShellJekyll
+		executeJekyll, err = executeShellJekyll, nil
 	case "shell-unsafe":
-		executeJekyll = executeShellJekyllUnsafe
+		executeJekyll, err = executeShellJekyllUnsafe, nil
+	case "docker":
+		executeJekyll, err = getExecuteDockerJekyll(jekyllOpts)
 	default:
 		panic(fmt.Errorf("invalid -jekyll flag value of '%s'", jekyll))
+	}
+
+	if err != nil {
+		panic(err)
 	}
 
 	buildJekyll := groupcache.NewGroup("build-jekyll", 1<<20, buildJekyllGetter{
