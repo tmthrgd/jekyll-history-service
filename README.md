@@ -5,33 +5,27 @@ any commit in its history.
 
 ## Download:
 
-```
-go get github.com/tmthrgd/jekyll-history-service && go install github.com/tmthrgd/jekyll-history-service
-```
+	go get github.com/tmthrgd/jekyll-history-service && go install github.com/tmthrgd/jekyll-history-service
 
 ## Environment Variables:
 
 The following environment variables **must** be set before use:
 
-```
-AWS_ACCESS_KEY_ID=
-AWS_SECRET_ACCESS_KEY=
-S3_BUCKET=
-S3_ENDPOINT=
-```
+	AWS_ACCESS_KEY_ID=
+	AWS_SECRET_ACCESS_KEY=
+	S3_BUCKET=
+	S3_ENDPOINT=
 
 The following environment variables **should** be set before use:
 
-```
-GITHUB_CLIENT_ID=
-GITHUB_CLIENT_SECRET=
-```
+	GITHUB_CLIENT_ID=
+	GITHUB_CLIENT_SECRET=
 
 If a `.env` file exists in the working directory, environment variables will be read from it.
 
 ## Run:
 
-`jekyll-history-service`
+	jekyll-history-service
 
 ## License
 
