@@ -103,7 +103,7 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 		return nil, err
 	}
 
-	cmd := strslice.StrSlice{"jekyll", "build", "--no-watch", "-s", "/source", "-d", "/destination"}
+	cmd := strslice.StrSlice{"jekyll", "build", "--no-watch", "-s", "/srv/src", "-d", "/srv/dst"}
 
 	if debug {
 		cmd = append(cmd, "--trace", "--verbose")
@@ -134,8 +134,8 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 			NetworkDisabled: true,
 		}, &container.HostConfig{
 			Binds: []string{
-				fmt.Sprintf("%s:/source:ro", src),
-				fmt.Sprintf("%s:/destination", dst),
+				fmt.Sprintf("%s:/srv/src:ro", src),
+				fmt.Sprintf("%s:/srv/dst", dst),
 			},
 
 			NetworkMode: "none",
