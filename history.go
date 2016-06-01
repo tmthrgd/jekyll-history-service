@@ -46,7 +46,7 @@ func main() {
 	flag.StringVar(&jekyll, "jekyll", "shell", "the method to run jekyll (shell, shell-unsafe, docker)")
 
 	var jekyllOpts string
-	flag.StringVar(&jekyllOpts, "jekyll-opts", "", "JSON encoded options to use when running jekyll")
+	flag.StringVar(&jekyllOpts, "jekyll-opts", "", "option string to use when running jekyll")
 
 	var highlightStyle string
 	flag.StringVar(&highlightStyle, "highlight-style", "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/styles/github-gist.min.css", "the highlight.js stylesheet")
