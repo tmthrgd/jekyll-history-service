@@ -43,7 +43,7 @@ func main() {
 	flag.StringVar(&work, "work", "/tmp/jklhstry.${random}", "the working directory")
 
 	var jekyll string
-	flag.StringVar(&jekyll, "jekyll", "shell", "the method to run jekyll (shell, shell-unsafe, docker)")
+	flag.StringVar(&jekyll, "jekyll", "shell", "the method to run jekyll (shell, docker)")
 
 	var jekyllOpts string
 	flag.StringVar(&jekyllOpts, "jekyll-opts", "", "option string to use when running jekyll")
@@ -144,8 +144,6 @@ func main() {
 	switch jekyll {
 	case "shell":
 		executeJekyll, err = getExecuteShellJekyll(jekyllOpts)
-	case "shell-unsafe":
-		executeJekyll, err = getExecuteShellJekyllUnsafe(jekyllOpts)
 	case "docker":
 		executeJekyll, err = getExecuteDockerJekyll(jekyllOpts)
 	default:

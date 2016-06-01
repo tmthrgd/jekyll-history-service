@@ -25,43 +25,8 @@ func getExecuteShellJekyll(optsflag string) (func(src, dst string) error, error)
 		Env  []string
 		Args []string
 	}{
-		Env: []string{},
-	}
-
-	if len(optsflag) != 0 {
-		if err := json.Unmarshal([]byte(optsflag), &opts); err != nil {
-			return nil, err
-		}
-	}
-
-	args := []string{"--no-watch", "--safe"}
-
-	if debug {
-		args = append(args, "--trace", "--verbose")
-	}
-
-	if !verbose {
-		args = append(args, "--quiet")
-	}
-
-	args = append(args, opts.Args...)
-
-	return func(src, dst string) error {
-		cmd := exec.Command("jekyll", append([]string{"build", "-s", src, "-d", dst}, args...)...)
-		cmd.Dir = src
-		cmd.Env = opts.Env
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		return cmd.Run()
-	}, nil
-}
-
-func getExecuteShellJekyllUnsafe(optsflag string) (func(src, dst string) error, error) {
-	opts := struct {
-		Env  []string
-		Args []string
-	}{
-		Env: []string{},
+		Env:  []string{},
+		Args: []string{"--safe"},
 	}
 
 	if len(optsflag) != 0 {
