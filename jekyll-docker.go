@@ -41,6 +41,11 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 			Use    bool
 			Verify bool
 		}
+
+		Cap struct {
+			Add  []string
+			Drop []string
+		}
 	}{
 		Host: client.DefaultDockerHost,
 
@@ -143,6 +148,9 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 			NetworkMode: "none",
 
 			AutoRemove: !debug,
+
+			CapAdd:  opts.Cap.Add,
+			CapDrop: opts.Cap.Drop,
 
 			ReadonlyRootfs: true,
 
