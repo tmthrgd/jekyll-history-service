@@ -133,8 +133,6 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 
 			Image: opts.Image,
 
-			Entrypoint: strslice.StrSlice{},
-
 			NetworkDisabled: true,
 		}, &container.HostConfig{
 			Binds: []string{
