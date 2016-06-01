@@ -68,7 +68,23 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 			Verify: true,
 		},
 
-		ReadonlyRootfs: true,
+		Cap: struct {
+			Add  []string
+			Drop []string
+		}{
+			Drop: []string{
+				"CHOWN",
+				"DAC_OVERRIDE",
+				"FSETID",
+				"FOWNER",
+				"MKNOD",
+				"NET_RAW",
+				"SETFCAP",
+				"NET_BIND_SERVICE",
+				"SYS_CHROOT",
+				"KILL",
+			},
+		},
 	}
 
 	if len(optsflag) != 0 {
