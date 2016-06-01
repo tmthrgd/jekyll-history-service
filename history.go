@@ -39,6 +39,9 @@ func main() {
 	var addr string
 	flag.StringVar(&addr, "addr", ":8080", "the address to listen on")
 
+	var work string
+	flag.StringVar(&work, "work", "/tmp/jklhstry.${random}", "the working directory")
+
 	var jekyll string
 	flag.StringVar(&jekyll, "jekyll", "shell", "the method to run jekyll (shell, shell-unsafe, docker)")
 
@@ -52,17 +55,26 @@ func main() {
 
 	fmt.Println(fullVersionStr)
 
-	tmp, err := ioutil.TempDir("", "jklhstry.")
-	if err != nil {
-		panic(err)
-	}
+	hasWork := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "work" {
+			hasWork = true
+		}
+	})
 
-	if !debug {
-		defer os.RemoveAll(tmp)
+	if !hasWork {
+		var err error
+		if work, err = ioutil.TempDir("", "jklhstry."); err != nil {
+			panic(err)
+		}
+
+		if !debug {
+			defer os.RemoveAll(work)
+		}
 	}
 
 	if verbose {
-		fmt.Printf("using temp directory '%s'\n", tmp)
+		fmt.Printf("using work directory '%s'\n", work)
 	}
 
 	var s3Bucket *s3.Bucket
@@ -127,6 +139,7 @@ func main() {
 	githubClient.UserAgent = fullVersionStr
 
 	var executeJekyll func(src, dst string) error
+	var err error
 
 	switch jekyll {
 	case "shell":
@@ -144,7 +157,7 @@ func main() {
 	}
 
 	buildJekyll := groupcache.NewGroup("build-jekyll", 1<<20, buildJekyllGetter{
-		WorkingDirectory: tmp,
+		WorkingDirectory: work,
 
 		ExecuteJekyll: executeJekyll,
 
