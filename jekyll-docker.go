@@ -34,7 +34,7 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 		Args []string
 
 		TLS struct {
-			CACert string
+			CACert string `json:"ca-cert"`
 			Cert   string
 			Key    string
 
@@ -54,7 +54,7 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 		Image: "jekyll/jekyll",
 
 		TLS: struct {
-			CACert string
+			CACert string `json:"ca-cert"`
 			Cert   string
 			Key    string
 
