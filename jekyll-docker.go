@@ -46,6 +46,8 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 			Add  []string
 			Drop []string
 		}
+
+		ReadonlyRootfs bool `json:"read-only"`
 	}{
 		Host: client.DefaultDockerHost,
 
@@ -65,6 +67,8 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 
 			Verify: true,
 		},
+
+		ReadonlyRootfs: true,
 	}
 
 	if len(optsflag) != 0 {
@@ -152,7 +156,7 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 			CapAdd:  opts.Cap.Add,
 			CapDrop: opts.Cap.Drop,
 
-			ReadonlyRootfs: true,
+			ReadonlyRootfs: opts.ReadonlyRootfs,
 
 			Resources: container.Resources{
 				Memory:     100 * 1024 * 1024,
