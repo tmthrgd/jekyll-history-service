@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+
+if Process.uid == 0 || Process.euid == 0
+	exec "chpst", "-u", "jekyll:jekyll", Gem.bin_path("jekyll", "jekyll"), *ARGV
+else
+	exec Gem.bin_path("jekyll", "jekyll"), *ARGV
+end

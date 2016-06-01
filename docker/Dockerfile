@@ -54,4 +54,4 @@ RUN apk del zlib-dev build-base libxml2-dev libxslt-dev readline-dev libffi-dev 
 
 RUN docker-helper cleanup
 
-COPY copy/ /
+ADD jekyll /usr/local/bin
