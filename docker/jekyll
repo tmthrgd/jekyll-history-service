@@ -1,7 +1,8 @@
-#!/usr/bin/env ruby
+#!/bin/sh
+set -e
 
-if Process.uid == 0 || Process.euid == 0
-	exec "chpst", "-u", "jekyll:jekyll", Gem.bin_path("jekyll", "jekyll"), *ARGV
+if [ $(id -r -u) -eq 0 ] || [ $(id -u) -eq 0 ]; then
+	exec chpst -u jekyll:jekyll /usr/local/bin/jekyll.orig "$@"
 else
-	exec Gem.bin_path("jekyll", "jekyll"), *ARGV
-end
+	exec /usr/local/bin/jekyll.orig "$@"
+fi

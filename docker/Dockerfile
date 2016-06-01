@@ -46,6 +46,8 @@ RUN \
 	docker-helper add-user-1000 jekyll && \
 	echo 'jekyll ALL=NOPASSWD:ALL' >> /etc/sudoers
 
+RUN ln -s $(ruby -e 'print Gem.bin_path("jekyll", "jekyll")') /usr/local/bin/jekyll.orig
+
 RUN gem clean
 
 RUN apk del zlib-dev build-base libxml2-dev libxslt-dev readline-dev libffi-dev \
