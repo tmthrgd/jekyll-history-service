@@ -191,6 +191,10 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 	}
 
 	if err := filepath.Walk(sitePath, func(filePath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
 		if info == nil {
 			return &os.PathError{Op: "open", Path: filePath, Err: errors.New("failed to get file info")}
 		}
