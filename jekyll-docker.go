@@ -119,6 +119,10 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 	var seenWarningsMu sync.Mutex
 
 	return func(src, dst string) error {
+		if err := os.MkdirAll(dst, 0755); err != nil {
+			return err
+		}
+
 		resp, err := api.ContainerCreate(context.Background(), &container.Config{
 			AttachStdout: true,
 			AttachStderr: true,
