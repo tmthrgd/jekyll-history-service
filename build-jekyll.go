@@ -28,7 +28,7 @@ import (
 const sniffLen = 512
 
 type buildJekyllGetter struct {
-	TempDirectory string
+	WorkingDirectory string
 
 	ExecuteJekyll func(src, dst string) error
 
@@ -52,7 +52,7 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 
 	tagPath := filepath.Join(tag[0:1], tag[1:2], tag[2:])
 
-	basePath := filepath.Join(bj.TempDirectory, tagPath)
+	basePath := filepath.Join(bj.WorkingDirectory, tagPath)
 
 	if !debug {
 		defer os.RemoveAll(basePath)

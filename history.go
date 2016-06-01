@@ -144,7 +144,7 @@ func main() {
 	}
 
 	buildJekyll := groupcache.NewGroup("build-jekyll", 1<<20, buildJekyllGetter{
-		TempDirectory: tmp,
+		WorkingDirectory: tmp,
 
 		ExecuteJekyll: executeJekyll,
 
