@@ -15,6 +15,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
 	"testing"
 	"time"
 )
@@ -157,5 +158,189 @@ func TestAssetContent(t *testing.T) {
 
 	if err := filepath.Walk("views", testAssetContentWalkFunc); err != nil {
 		t.Error(err)
+	}
+}
+
+func BenchmarkAssetAll(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		for _, name := range AssetNames() {
+			if _, err := Asset(name); err != nil {
+				b.Error(err)
+			}
+		}
+	}
+}
+
+func BenchmarkReadFileAll(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		for _, name := range AssetNames() {
+			if _, err := ioutil.ReadFile(name); err != nil {
+				b.Error(err)
+			}
+		}
+	}
+}
+
+func benchmarkFindExtreme(large bool) string {
+	var extreme string
+	var size int64 = -1
+
+	if !large {
+		size = int64(^uint(0) >> 1)
+	}
+
+	for _, name := range AssetNames() {
+		info, _ := AssetInfo(name)
+		s := info.Size()
+
+		if large {
+			if s > size {
+				extreme = name
+				size = s
+			}
+		} else {
+			if s < size {
+				extreme = name
+				size = s
+			}
+		}
+	}
+
+	return extreme
+}
+
+func BenchmarkAssetSmall(b *testing.B) {
+	smallest := benchmarkFindExtreme(false)
+	if len(smallest) == 0 {
+		b.Error("no files")
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		if _, err := Asset(smallest); err != nil {
+			b.Error(err)
+		}
+	}
+}
+
+func BenchmarkReadFileSmall(b *testing.B) {
+	smallest := benchmarkFindExtreme(false)
+	if len(smallest) == 0 {
+		b.Error("no files")
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		if _, err := ioutil.ReadFile(smallest); err != nil {
+			b.Error(err)
+		}
+	}
+}
+
+func BenchmarkAssetLargest(b *testing.B) {
+	largest := benchmarkFindExtreme(true)
+	if len(largest) == 0 {
+		b.Error("no files")
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		if _, err := Asset(largest); err != nil {
+			b.Error(err)
+		}
+	}
+}
+
+func BenchmarkReadFileLargest(b *testing.B) {
+	largest := benchmarkFindExtreme(true)
+	if len(largest) == 0 {
+		b.Error("no files")
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		if _, err := ioutil.ReadFile(largest); err != nil {
+			b.Error(err)
+		}
+	}
+}
+
+type bySizeSorter struct {
+	items []struct {
+		name string
+		size int64
+	}
+}
+
+func (s *bySizeSorter) Add(name string, size int64) {
+	s.items = append(s.items, struct {
+		name string
+		size int64
+	}{
+		name: name,
+		size: size,
+	})
+}
+
+func (s *bySizeSorter) Get(i int) string {
+	return s.items[i].name
+}
+
+func (s *bySizeSorter) Len() int {
+	return len(s.items)
+}
+
+func (s *bySizeSorter) Swap(i, j int) {
+	s.items[i], s.items[j] = s.items[j], s.items[i]
+}
+
+func (s *bySizeSorter) Less(i, j int) bool {
+	return s.items[i].size < s.items[j].size
+}
+
+func benchmarkFindMedian() string {
+	s := &bySizeSorter{}
+
+	for _, name := range AssetNames() {
+		info, _ := AssetInfo(name)
+		s.Add(name, info.Size())
+	}
+
+	sort.Sort(s)
+
+	return s.Get(s.Len() / 2)
+}
+
+func BenchmarkAssetMedian(b *testing.B) {
+	median := benchmarkFindMedian()
+	if len(median) == 0 {
+		b.Error("no files")
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		if _, err := Asset(median); err != nil {
+			b.Error(err)
+		}
+	}
+}
+
+func BenchmarkReadFileMedian(b *testing.B) {
+	median := benchmarkFindMedian()
+	if len(median) == 0 {
+		b.Error("no files")
+	}
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		if _, err := ioutil.ReadFile(median); err != nil {
+			b.Error(err)
+		}
 	}
 }
