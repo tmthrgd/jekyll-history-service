@@ -209,7 +209,7 @@ func benchmarkFindExtreme(large bool) string {
 	return extreme
 }
 
-func BenchmarkAssetSmall(b *testing.B) {
+func BenchmarkAssetSmallest(b *testing.B) {
 	smallest := benchmarkFindExtreme(false)
 	if len(smallest) == 0 {
 		b.Error("no files")
@@ -224,7 +224,7 @@ func BenchmarkAssetSmall(b *testing.B) {
 	}
 }
 
-func BenchmarkReadFileSmall(b *testing.B) {
+func BenchmarkReadFileSmallest(b *testing.B) {
 	smallest := benchmarkFindExtreme(false)
 	if len(smallest) == 0 {
 		b.Error("no files")
