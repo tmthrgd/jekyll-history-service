@@ -10,7 +10,6 @@ package main
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -117,47 +116,25 @@ func TestAssetInfo(t *testing.T) {
 	}
 }
 
-func testAssetContentWalkFunc(path string, info os.FileInfo, err error) error {
-	if err != nil {
-		return err
-	}
-
-	if info == nil {
-		return &os.PathError{Op: "open", Path: path, Err: errors.New("failed to get file info")}
-	}
-
-	if info.IsDir() {
-		return nil
-	}
-
-	file, err := ioutil.ReadFile(path)
-	if err != nil {
-		return err
-	}
-
-	asset, err := Asset(path)
-	if err != nil {
-		return err
-	}
-
-	if !bytes.Equal(file, asset) {
-		return fmt.Errorf("Asset did not return same content for: %s", path)
-	}
-
-	return nil
-}
-
 func TestAssetContent(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping test in short mode.")
 	}
 
-	if err := filepath.Walk("assets", testAssetContentWalkFunc); err != nil {
-		t.Error(err)
-	}
+	for _, name := range AssetNames() {
+		file, err := ioutil.ReadFile(name)
+		if err != nil {
+			t.Error(err)
+		}
 
-	if err := filepath.Walk("views", testAssetContentWalkFunc); err != nil {
-		t.Error(err)
+		asset, err := Asset(name)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if !bytes.Equal(file, asset) {
+			t.Errorf("Asset did not return same content for: %s", name)
+		}
 	}
 }
 
