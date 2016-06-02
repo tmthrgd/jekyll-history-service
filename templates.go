@@ -42,13 +42,11 @@ func assetPath(name string) string {
 var unquoteableRegexp = regexp.MustCompile("^[^ \t\n\f\r\"'`=<>]+$")
 
 func html5Attr(value string) string {
-	value = html.EscapeString(value)
-
 	if unquoteableRegexp.MatchString(value) {
-		return value
+		return html.EscapeString(value)
 	}
 
-	return `"` + value + `"`
+	return `"` + html.EscapeString(value) + `"`
 }
 
 func truncate(value string, length int) string {
