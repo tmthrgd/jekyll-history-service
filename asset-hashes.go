@@ -23,7 +23,7 @@ var _assetHashes = map[string]string{
 	"assets/commit.js": "87c6e7d8e6a7041eed85017be3192693719f8897670125c45bec6fcdde8ed883",
 	"assets/robots.txt": "f4347e7481764549a05b77820e3ab4a468273afc3935613db92267b7b97670b1",
 	"assets/style.css": "1b0471015f022ec73f4c085b7c8317b35e8faa7f77bdf1dfa3551323747e548e",
-	"views/commit.tmpl": "434f98a22564f3c9347b1b35127d1cbb0f496de8d717fb0a2f29e4b3979ba623",
+	"views/commit.tmpl": "a54576e0a996a4385ed6bae1f5636fd28658c974032774c744b3b1231cac997b",
 	"views/error.tmpl": "a052ee9a1ed11400dc9ec4269a7c807e881613973a0c5494cb4307cab946dcde",
 	"views/index.tmpl": "46b66f8769bc12bbd600c380d9840c826a746d80efd2bf0777ccb7676174a000",
 	"views/repo.tmpl": "8b18b3980bb886e81f15ec652ebafe808c6bca657b53608f212dde224d7bb717",

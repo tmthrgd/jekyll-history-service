@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/google/go-github/github"
@@ -46,16 +47,29 @@ func getCommitHandler(githubClient *github.Client, highlightStyle string) func(w
 			log.Printf("GitHub API Rate Limit is %d remaining of %d, to be reset at %s\n", resp.Remaining, resp.Limit, resp.Reset)
 		}
 
+		base := url.URL{
+			Scheme: "http",
+			Host: r.Host,
+		}
+
+		if r.TLS != nil {
+			base.Scheme = "https"
+		}
+
 		if wrote, err := executeTemplate(commitTemplate, struct {
 			User   string
 			Repo   string
 			Commit *github.RepositoryCommit
+
+			URLBase string
 
 			HighlightStyle string
 		}{
 			User:   user,
 			Repo:   repo,
 			Commit: repoCommit,
+
+			URLBase: base.String(),
 
 			HighlightStyle: highlightStyle,
 		}, w); err != nil {
