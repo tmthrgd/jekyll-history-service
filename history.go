@@ -6,16 +6,13 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
-	"hash/crc32"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 
-	"github.com/golang/groupcache"
 	_ "github.com/joho/godotenv/autoload"
 )
 
@@ -96,7 +93,7 @@ func main() {
 		panic(err)
 	}
 
-	buildJekyll := groupcache.NewGroup("build-jekyll", 1<<20, buildJekyllGetter{
+	buildJekyll, httpPool, poolOpts := getGroupcache(&buildJekyllGetter{
 		WorkingDirectory: work,
 
 		ExecuteJekyll: executeJekyll,
@@ -105,21 +102,6 @@ func main() {
 
 		GithubClient: githubClient,
 	})
-
-	castagnoli := crc32.MakeTable(crc32.Castagnoli)
-
-	poolOpts := &groupcache.HTTPPoolOptions{
-		BasePath: "/_groupcache/",
-
-		HashFn: func(data []byte) uint32 {
-			if idx := bytes.IndexByte(data, 0x00); idx != -1 {
-				return crc32.Checksum(data[:idx], castagnoli)
-			}
-
-			return crc32.Checksum(data, castagnoli)
-		},
-	}
-	httpPool := groupcache.NewHTTPPoolOpts("http://jekyllhistory.org:8080", poolOpts)
 
 	router := getRouter(httpPool, poolOpts, githubClient, highlightStyle, buildJekyll, s3BucketNoGzip)
 
