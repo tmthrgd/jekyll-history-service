@@ -19,7 +19,7 @@ import (
 	"github.com/docker/engine-api/client"
 	"github.com/docker/engine-api/types"
 	"github.com/docker/engine-api/types/container"
-	"github.com/docker/engine-api/types/strslice"
+	"github.com/docker/engine-api/types/network"
 	"github.com/docker/go-connections/tlsconfig"
 	"golang.org/x/net/context"
 )
@@ -27,8 +27,6 @@ import (
 func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error) {
 	opts := struct {
 		Host string
-
-		Image string
 
 		Env  []string
 		Args []string
@@ -42,16 +40,13 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 			Verify bool
 		}
 
-		Cap struct {
-			Add  []string
-			Drop []string
+		Config struct {
+			container.Config
+			Host    container.HostConfig
+			Network network.NetworkingConfig
 		}
-
-		ReadonlyRootfs bool `json:"read-only"`
 	}{
 		Host: client.DefaultDockerHost,
-
-		Image: "jekyll/jekyll",
 
 		TLS: struct {
 			CACert string `json:"ca-cert"`
@@ -68,21 +63,41 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 			Verify: true,
 		},
 
-		Cap: struct {
-			Add  []string
-			Drop []string
+		Config: struct {
+			container.Config
+			Host    container.HostConfig
+			Network network.NetworkingConfig
 		}{
-			Drop: []string{
-				"CHOWN",
-				"DAC_OVERRIDE",
-				"FSETID",
-				"FOWNER",
-				"MKNOD",
-				"NET_RAW",
-				"SETFCAP",
-				"NET_BIND_SERVICE",
-				"SYS_CHROOT",
-				"KILL",
+			Config: container.Config{
+				Image: "jekyll/jekyll",
+
+				NetworkDisabled: true,
+			},
+
+			Host: container.HostConfig{
+				NetworkMode: "none",
+
+				AutoRemove: !debug,
+
+				CapDrop: []string{
+					"CHOWN",
+					"DAC_OVERRIDE",
+					"FSETID",
+					"FOWNER",
+					"MKNOD",
+					"NET_RAW",
+					"SETFCAP",
+					"NET_BIND_SERVICE",
+					"SYS_CHROOT",
+					"KILL",
+				},
+
+				Resources: container.Resources{
+					Memory:     100 * 1024 * 1024,
+					MemorySwap: 100 * 1024 * 1024,
+
+					DiskQuota: 0,
+				},
 			},
 		},
 	}
@@ -93,7 +108,7 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 		}
 	}
 
-	if len(opts.Host) == 0 || len(opts.Image) == 0 {
+	if len(opts.Host) == 0 || len(opts.Config.Image) == 0 {
 		return nil, fmt.Errorf("invalid options")
 	}
 
@@ -124,11 +139,11 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 		return nil, err
 	}
 
-	if _, _, err := api.ImageInspectWithRaw(context.Background(), opts.Image, false); err != nil {
+	if _, _, err := api.ImageInspectWithRaw(context.Background(), opts.Config.Image, false); err != nil {
 		return nil, err
 	}
 
-	cmd := strslice.StrSlice{"jekyll", "build", "--no-watch", "-s", "/srv/src", "-d", "/srv/dst"}
+	cmd := []string{"jekyll", "build", "--no-watch", "-s", "/srv/src", "-d", "/srv/dst"}
 
 	if debug {
 		cmd = append(cmd, "--trace", "--verbose")
@@ -138,7 +153,14 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 		cmd = append(cmd, "--quiet")
 	}
 
-	cmd = append(cmd, opts.Args...)
+	opts.Config.AttachStdin = false
+	opts.Config.AttachStdout = true
+	opts.Config.AttachStderr = true
+	opts.Config.Tty = false
+	opts.Config.OpenStdin = false
+
+	opts.Config.Env = opts.Env
+	opts.Config.Cmd = append(cmd, opts.Args...)
 
 	seenWarnings := make(map[string]struct{})
 	var seenWarningsMu sync.Mutex
@@ -148,39 +170,13 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 			return err
 		}
 
-		resp, err := api.ContainerCreate(context.Background(), &container.Config{
-			AttachStdout: true,
-			AttachStderr: true,
+		host := opts.Config.Host
+		host.Binds = append([]string{
+			fmt.Sprintf("%s:/srv/src:ro", src),
+			fmt.Sprintf("%s:/srv/dst", dst),
+		}, host.Binds...)
 
-			Env: opts.Env,
-
-			Cmd: cmd,
-
-			Image: opts.Image,
-
-			NetworkDisabled: true,
-		}, &container.HostConfig{
-			Binds: []string{
-				fmt.Sprintf("%s:/srv/src:ro", src),
-				fmt.Sprintf("%s:/srv/dst", dst),
-			},
-
-			NetworkMode: "none",
-
-			AutoRemove: !debug,
-
-			CapAdd:  opts.Cap.Add,
-			CapDrop: opts.Cap.Drop,
-
-			ReadonlyRootfs: opts.ReadonlyRootfs,
-
-			Resources: container.Resources{
-				Memory:     100 * 1024 * 1024,
-				MemorySwap: 100 * 1024 * 1024,
-
-				DiskQuota: 0,
-			},
-		}, nil, "")
+		resp, err := api.ContainerCreate(context.Background(), &opts.Config.Config, &host, &opts.Config.Network, "")
 		if err != nil {
 			return err
 		}
