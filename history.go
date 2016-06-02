@@ -16,8 +16,6 @@ import (
 	"os"
 
 	"github.com/golang/groupcache"
-	"github.com/google/go-github/github"
-	"github.com/gregjones/httpcache"
 	_ "github.com/joho/godotenv/autoload"
 )
 
@@ -78,21 +76,10 @@ func main() {
 		panic(err)
 	}
 
-	githubClientTr := httpcache.NewMemoryCacheTransport()
-	githubClientTr.MarkCachedResponses = true
-
-	id := os.Getenv("GITHUB_CLIENT_ID")
-	if secret := os.Getenv("GITHUB_CLIENT_SECRET"); len(id) != 0 && len(secret) != 0 {
-		githubClientTr.Transport = &githubAuth{
-			ID:     id,
-			Secret: secret,
-		}
-	} else if len(id) != 0 || len(secret) != 0 {
-		panic("both GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET must be set")
+	githubClient, err := getGithubClient()
+	if err != nil {
+		panic(err)
 	}
-
-	githubClient := github.NewClient(githubClientTr.Client())
-	githubClient.UserAgent = fullVersionStr
 
 	var executeJekyll func(src, dst string) error
 
