@@ -8,11 +8,26 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"strings"
 	"testing"
 )
 
+var assetHashNames []string
+
+func init() {
+	for _, name := range AssetNames() {
+		if strings.HasPrefix(name, "assets/") {
+			assetHashNames = append(assetHashNames, name)
+		}
+	}
+}
+
 func TestAssetHash(t *testing.T) {
-	h, err := AssetHash(AssetNames()[0])
+	if len(assetHashNames) == 0 {
+		t.Error("no hashed assets found")
+	}
+
+	h, err := AssetHash(assetHashNames[0])
 
 	if err != nil {
 		t.Error(err)
@@ -34,7 +49,7 @@ func TestAssetHash(t *testing.T) {
 }
 
 func TestAssetHashHasAll(t *testing.T) {
-	for _, name := range AssetNames() {
+	for _, name := range assetHashNames {
 		if _, err := AssetHash(name); err != nil {
 			t.Error(err)
 		}
@@ -42,7 +57,7 @@ func TestAssetHashHasAll(t *testing.T) {
 }
 
 func TestAssetHashAddStrip(t *testing.T) {
-	for _, name := range AssetNames() {
+	for _, name := range assetHashNames {
 		a, err := AssetHashName(name)
 		if err != nil {
 			t.Error(err)
@@ -66,7 +81,7 @@ func TestAssetHashes(t *testing.T) {
 
 	h := sha256.New()
 
-	for _, name := range AssetNames() {
+	for _, name := range assetHashNames {
 		asset, err := Asset(name)
 		if err != nil {
 			t.Error(err)

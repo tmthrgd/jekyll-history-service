@@ -17,7 +17,7 @@ import (
 )
 
 //go:generate go-bindata -nomemcopy -nocompress assets/... views/...
-//go:generate ./asset-hashes assets/* views/*
+//go:generate ./asset-hashes assets/*
 //go:generate protoc --go_out=. groupcache.proto
 
 var debug bool
