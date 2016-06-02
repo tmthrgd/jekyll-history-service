@@ -9,7 +9,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"log"
-	"net"
 	"net/http"
 
 	"github.com/golang/groupcache"
@@ -51,13 +50,9 @@ func getBuildCommitHandler(buildJekyll *groupcache.Group) func(w http.ResponseWr
 		}
 
 		url := *r.URL
-		url.Host = tag + ".jekyllhistory.org"
-
-		if _, port, err := net.SplitHostPort(r.Host); err == nil {
-			url.Host = net.JoinHostPort(url.Host, port)
-		}
-
+		url.Host = tag + "." + r.Host
 		url.Path = ps.ByName("path")
+
 		http.Redirect(w, r, url.String(), http.StatusFound)
 	}
 }
