@@ -14,58 +14,104 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func gotoHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	w.Header().Set("Cache-Control", "max-age=0")
-
-	if err := r.ParseForm(); err != nil {
-		log.Printf("%[1]T %[1]v", err)
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
-	}
-
+func gotoNotFoundHandler(w http.ResponseWriter, r *http.Request) {
 	newURL := *r.URL
 	newURL.Path = "/"
 	newURL.RawQuery = ""
 
-	urlField := r.Form.Get("url")
+	http.Redirect(w, r, newURL.String(), http.StatusFound)
+}
 
-	if len(urlField) == 0 {
-		http.Redirect(w, r, newURL.String(), http.StatusFound)
-		return
-	}
+func gotoUserHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	user := ps.ByName("user")
 
-	if !strings.HasPrefix(urlField, "http:") && !strings.HasPrefix(urlField, "https:") {
-		urlField = "https://" + urlField
-	}
-
-	parsedURL, err := url.Parse(urlField)
-	if err != nil {
-		http.Redirect(w, r, newURL.String(), http.StatusFound)
-		return
-	}
-
-	if host := strings.ToLower(parsedURL.Host); host != "github.com" && host != "www.github.com" {
-		http.Redirect(w, r, newURL.String(), http.StatusFound)
-		return
-	}
-
-	switch path := strings.Split(strings.TrimSuffix(parsedURL.Path[1:], "/"), "/"); len(path) {
-	case 1:
-		if len(path[0]) == 0 {
-			break
-		}
-
-		newURL.Path = "/u/" + url.QueryEscape(path[0]) + "/"
-	case 2:
-		newURL.Path = "/u/" + url.QueryEscape(path[0]) + "/r/" + url.QueryEscape(path[1]) + "/"
-	case 4:
-		switch strings.ToLower(path[2]) {
-		case "commit":
-			newURL.Path = "/u/" + url.QueryEscape(path[0]) + "/r/" + url.QueryEscape(path[1]) + "/c/" + url.QueryEscape(path[3]) + "/"
-		case "tree":
-			newURL.Path = "/u/" + url.QueryEscape(path[0]) + "/r/" + url.QueryEscape(path[1]) + "/t/" + url.QueryEscape(path[3]) + "/"
-		}
-	}
+	newURL := *r.URL
+	newURL.Path = "/u/" + url.QueryEscape(user) + "/"
+	newURL.RawQuery = ""
 
 	http.Redirect(w, r, newURL.String(), http.StatusFound)
+}
+
+func gotoRepoHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	user, repo := ps.ByName("user"), ps.ByName("repo")
+
+	newURL := *r.URL
+	newURL.Path = "/u/" + url.QueryEscape(user) + "/r/" + url.QueryEscape(repo) + "/"
+	newURL.RawQuery = ""
+
+	http.Redirect(w, r, newURL.String(), http.StatusFound)
+}
+
+func gotoCommitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	user, repo, commit := ps.ByName("user"), ps.ByName("repo"), ps.ByName("commit")
+
+	newURL := *r.URL
+	newURL.Path = "/u/" + url.QueryEscape(user) + "/r/" + url.QueryEscape(repo) + "/c/" + url.QueryEscape(commit) + "/"
+	newURL.RawQuery = ""
+
+	http.Redirect(w, r, newURL.String(), http.StatusFound)
+}
+
+func gotoTreeHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	user, repo, tree := ps.ByName("user"), ps.ByName("repo"), ps.ByName("tree")
+
+	newURL := *r.URL
+	newURL.Path = "/u/" + url.QueryEscape(user) + "/r/" + url.QueryEscape(repo) + "/t/" + url.QueryEscape(tree) + "/"
+	newURL.RawQuery = ""
+
+	http.Redirect(w, r, newURL.String(), http.StatusFound)
+}
+
+func getGotoHandler() func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	router := new(httprouter.Router)
+
+	router.NotFound = http.HandlerFunc(gotoNotFoundHandler)
+	router.GET("/:user", gotoUserHandler)
+	router.GET("/:user/", gotoUserHandler)
+	router.GET("/:user/:repo", gotoRepoHandler)
+	router.GET("/:user/:repo/", gotoRepoHandler)
+	router.GET("/:user/:repo/commit/:commit", gotoCommitHandler)
+	router.GET("/:user/:repo/commit/:commit/", gotoCommitHandler)
+	router.GET("/:user/:repo/tree/:tree", gotoTreeHandler)
+	router.GET("/:user/:repo/tree/:tree/", gotoTreeHandler)
+
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		w.Header().Set("Cache-Control", "max-age=0")
+
+		if err := r.ParseForm(); err != nil {
+			log.Printf("%[1]T %[1]v", err)
+			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			return
+		}
+
+		urlField := r.Form.Get("url")
+
+		if len(urlField) == 0 {
+			gotoNotFoundHandler(w, r)
+			return
+		}
+
+		if !strings.HasPrefix(urlField, "http:") && !strings.HasPrefix(urlField, "https:") {
+			urlField = "https://" + urlField
+		}
+
+		parsedURL, err := url.Parse(urlField)
+		if err != nil {
+			gotoNotFoundHandler(w, r)
+			return
+		}
+
+		if host := strings.ToLower(parsedURL.Host); host != "github.com" && host != "www.github.com" {
+			gotoNotFoundHandler(w, r)
+			return
+		}
+
+		req := *r
+
+		reqURL := *r.URL
+		reqURL.Path = parsedURL.Path
+		req.URL = &reqURL
+
+		router.ServeHTTP(w, &req)
+	}
 }

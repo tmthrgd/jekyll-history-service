@@ -190,7 +190,7 @@ func main() {
 
 	baseRouter.HEAD("/", indexHandler)
 	baseRouter.GET("/", indexHandler)
-	baseRouter.GET("/goto/", gotoHandler)
+	baseRouter.GET("/goto/", getGotoHandler())
 	user := getUserHandler(githubClient)
 	baseRouter.GET("/u/:user/", user)
 	baseRouter.GET("/u/:user/p/:page/", user)
