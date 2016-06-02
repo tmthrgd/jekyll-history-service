@@ -11,7 +11,6 @@ import (
 	"os"
 
 	"github.com/gregjones/httpcache"
-	_ "github.com/joho/godotenv/autoload"
 	"github.com/mitchellh/goamz/aws"
 	"github.com/mitchellh/goamz/s3"
 )

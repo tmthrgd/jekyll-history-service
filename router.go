@@ -11,7 +11,6 @@ import (
 	"github.com/elazarl/go-bindata-assetfs"
 	"github.com/golang/groupcache"
 	"github.com/google/go-github/github"
-	_ "github.com/joho/godotenv/autoload"
 	"github.com/julienschmidt/httprouter"
 	"github.com/keep94/weblogs"
 	"github.com/mitchellh/goamz/s3"
