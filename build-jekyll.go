@@ -72,7 +72,13 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 	})
 	if err != nil {
 		resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
-		resp.Code = http.StatusBadGateway
+
+		if gerr, ok := err.(*github.ErrorResponse); ok && gerr.Response.StatusCode == http.StatusNotFound {
+			resp.Code = http.StatusNotFound
+		} else {
+			resp.Code = http.StatusBadGateway
+		}
+
 		return dest.SetProto(&resp)
 	}
 

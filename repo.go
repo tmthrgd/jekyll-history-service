@@ -51,8 +51,13 @@ func getRepoHandler(githubClient *github.Client) func(w http.ResponseWriter, r *
 		if err != nil {
 			h.Del("Cache-Control")
 
-			log.Printf("%[1]T %[1]v", err)
-			http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+			if gerr, ok := err.(*github.ErrorResponse); ok && gerr.Response.StatusCode == http.StatusNotFound {
+				http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+			} else {
+				log.Printf("%[1]T %[1]v", err)
+				http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+			}
+
 			return
 		}
 
