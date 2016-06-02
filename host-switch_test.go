@@ -12,19 +12,19 @@ import (
 
 func TestHostSwitchAdd(t *testing.T) {
 	hs := &hostSwitch{}
-	hs.Add("example.com", http.HandlerFunc(func(http.ResponseWriter, *http.Request) { }))
-	hs.Add("example.org", http.HandlerFunc(func(http.ResponseWriter, *http.Request) { }))
+	hs.Add("example.com", http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+	hs.Add("example.org", http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 
 	defer func() {
 		if err := recover(); err != nil {
 			if err != `a handle is already registered for host 'example.com'` {
 				panic(err)
 			}
-		} else {	
+		} else {
 			t.Error("(*hostSwitch).Add did not panic on duplicate")
 		}
 	}()
-	hs.Add("example.com", http.HandlerFunc(func(http.ResponseWriter, *http.Request) { }))
+	hs.Add("example.com", http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 }
 
 func TestHostSwitchNotFound(t *testing.T) {
