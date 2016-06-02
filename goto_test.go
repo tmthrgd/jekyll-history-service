@@ -51,6 +51,7 @@ func TestGotoHandler(t *testing.T) {
 		"http://example.com/?url=github.com%2Fexample%2F": "http://example.com/u/example/",
 		"http://example.com/?url=https%3A%2F%2Fgithub.com%2Fexample%3Fa=b": "http://example.com/u/example/",
 		"http://example.com/?url=https%3A%2F%2Fgithub.com%2Fexample%23a": "http://example.com/u/example/",
+		"http://example.com/?url=https%3A%2F%2FGiThUb.cOm%2Fexample": "http://example.com/u/example/",
 
 		// user + repo
 		"http://example.com/?url=https%3A%2F%2Fgithub.com%2Fexample%2Fexample": "http://example.com/u/example/r/example/",
@@ -61,6 +62,7 @@ func TestGotoHandler(t *testing.T) {
 		"http://example.com/?url=github.com%2Fexample%2Fexample%2F": "http://example.com/u/example/r/example/",
 		"http://example.com/?url=https%3A%2F%2Fgithub.com%2Fexample%2Fexample%3Fa=b": "http://example.com/u/example/r/example/",
 		"http://example.com/?url=https%3A%2F%2Fgithub.com%2Fexample%2Fexample%23a": "http://example.com/u/example/r/example/",
+		"http://example.com/?url=https%3A%2F%2FGiThUb.cOm%2Fexample%2Fexample%2F": "http://example.com/u/example/r/example/",
 
 		// user + repo + commit
 		"http://example.com/?url=https%3A%2F%2Fgithub.com%2Fgit%2Fgit%2Fcommit%2Fe83c5163316f89bfbde7d9ab23ca2e25604af290": "http://example.com/u/git/r/git/c/e83c5163316f89bfbde7d9ab23ca2e25604af290/",
@@ -71,6 +73,7 @@ func TestGotoHandler(t *testing.T) {
 		"http://example.com/?url=github.com%2Fgit%2Fgit%2Fcommit%2Fe83c5163316f89bfbde7d9ab23ca2e25604af290%2F": "http://example.com/u/git/r/git/c/e83c5163316f89bfbde7d9ab23ca2e25604af290/",
 		"http://example.com/?url=https%3A%2F%2Fgithub.com%2Fgit%2Fgit%2Fcommit%2Fe83c5163316f89bfbde7d9ab23ca2e25604af290%3Fa=b": "http://example.com/u/git/r/git/c/e83c5163316f89bfbde7d9ab23ca2e25604af290/",
 		"http://example.com/?url=https%3A%2F%2Fgithub.com%2Fgit%2Fgit%2Fcommit%2Fe83c5163316f89bfbde7d9ab23ca2e25604af290%23a": "http://example.com/u/git/r/git/c/e83c5163316f89bfbde7d9ab23ca2e25604af290/",
+		"http://example.com/?url=https%3A%2F%2FGiThUb.cOm%2Fgit%2Fgit%2FcOmMiT%2Fe83c5163316f89bfbde7d9ab23ca2e25604af290": "http://example.com/u/git/r/git/c/e83c5163316f89bfbde7d9ab23ca2e25604af290/",
 
 		// user + repo + tree
 		"http://example.com/?url=https%3A%2F%2Fgithub.com%2Fexample%2Fexample%2Ftree%2Fmaster": "http://example.com/u/example/r/example/t/master/",
@@ -81,6 +84,7 @@ func TestGotoHandler(t *testing.T) {
 		"http://example.com/?url=github.com%2Fexample%2Fexample%2Ftree%2Fmaster%2F": "http://example.com/u/example/r/example/t/master/",
 		"http://example.com/?url=https%3A%2F%2Fgithub.com%2Fexample%2Fexample%2Ftree%2Fmaster%3Fa=b": "http://example.com/u/example/r/example/t/master/",
 		"http://example.com/?url=https%3A%2F%2Fgithub.com%2Fexample%2Fexample%2Ftree%2Fmaster%23a": "http://example.com/u/example/r/example/t/master/",
+		"http://example.com/?url=https%3A%2F%2FGiThUb.cOm%2Fexample%2Fexample%2FtReE%2Fmaster%2F": "http://example.com/u/example/r/example/t/master/",
 	} {
 		req, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
@@ -95,7 +99,7 @@ func TestGotoHandler(t *testing.T) {
 		}
 
 		if loc := rw.Headers.Get("Location"); loc != expect {
-			t.Errorf("unexpected redirect, expected %s, got %s", expect, loc)
+			t.Errorf("unexpected redirect for %s, expected %s, got %s", url, expect, loc)
 		}
 	}
 }
