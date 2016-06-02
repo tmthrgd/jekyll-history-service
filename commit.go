@@ -49,7 +49,7 @@ func getCommitHandler(githubClient *github.Client, highlightStyle string) func(w
 
 		base := url.URL{
 			Scheme: "http",
-			Host: r.Host,
+			Host:   r.Host,
 		}
 
 		if r.TLS != nil {
