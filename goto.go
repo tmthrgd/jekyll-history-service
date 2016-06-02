@@ -25,6 +25,11 @@ func gotoNotFoundHandler(w http.ResponseWriter, r *http.Request) {
 func gotoUserHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	user := ps.ByName("user")
 
+	if len(user) == 0 {
+		gotoNotFoundHandler(w, r)
+		return
+	}
+
 	newURL := *r.URL
 	newURL.Path = "/u/" + url.QueryEscape(user) + "/"
 	newURL.RawQuery = ""
@@ -34,6 +39,11 @@ func gotoUserHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 
 func gotoRepoHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	user, repo := ps.ByName("user"), ps.ByName("repo")
+
+	if len(user) == 0 || len(repo) == 0 {
+		gotoNotFoundHandler(w, r)
+		return
+	}
 
 	newURL := *r.URL
 	newURL.Path = "/u/" + url.QueryEscape(user) + "/r/" + url.QueryEscape(repo) + "/"
@@ -45,6 +55,11 @@ func gotoRepoHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Param
 func gotoCommitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	user, repo, commit := ps.ByName("user"), ps.ByName("repo"), ps.ByName("commit")
 
+	if len(user) == 0 || len(repo) == 0 || len(commit) == 0 {
+		gotoNotFoundHandler(w, r)
+		return
+	}
+
 	newURL := *r.URL
 	newURL.Path = "/u/" + url.QueryEscape(user) + "/r/" + url.QueryEscape(repo) + "/c/" + url.QueryEscape(commit) + "/"
 	newURL.RawQuery = ""
@@ -54,6 +69,11 @@ func gotoCommitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Par
 
 func gotoTreeHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	user, repo, tree := ps.ByName("user"), ps.ByName("repo"), ps.ByName("tree")
+
+	if len(user) == 0 || len(repo) == 0 || len(tree) == 0 {
+		gotoNotFoundHandler(w, r)
+		return
+	}
 
 	newURL := *r.URL
 	newURL.Path = "/u/" + url.QueryEscape(user) + "/r/" + url.QueryEscape(repo) + "/t/" + url.QueryEscape(tree) + "/"
