@@ -25,7 +25,7 @@ var (
 
 	timeZero time.Time
 
-	hostRegex = regexp.MustCompile(`^([0-9a-fA-F]{32}).jekyllhistory.org$`)
+	hostRegex = regexp.MustCompile(`(?i)^([0-9a-fA-F]{32}).jekyllhistory.org$`)
 )
 
 type repoSwitch struct {
