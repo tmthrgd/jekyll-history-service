@@ -216,15 +216,13 @@ func main() {
 	baseRouter.Handler(http.MethodHead, "/robots.txt", assetsRouter)
 	baseRouter.Handler(http.MethodGet, "/robots.txt", assetsRouter)
 
-	assetsHashRouter := http.FileServer(&assetfs.AssetFS{
+	baseRouter.ServeFiles("/assets/*filepath", &assetfs.AssetFS{
 		Asset:     AssetFromNameHash,
 		AssetDir:  AssetDir,
 		AssetInfo: AssetInfoFromNameHash,
 
 		Prefix: "assets",
 	})
-	baseRouter.Handler(http.MethodHead, "/assets/*path", http.StripPrefix("/assets/", assetsHashRouter))
-	baseRouter.Handler(http.MethodGet, "/assets/*path", http.StripPrefix("/assets/", assetsHashRouter))
 
 	hs := new(hostSwitch)
 	hs.NotFound = &repoSwitch{
