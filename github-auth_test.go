@@ -41,4 +41,8 @@ func TestGithubAuth(t *testing.T) {
 	if resp.Request.URL.String() != "http://example.com/test-url?client_id=test-auth-id&client_secret=test-auth-secret&test=test" {
 		t.Errorf("githubAuth create invalid request url of: %s", resp.Request.URL)
 	}
+
+	if req.URL.String() != "http://example.com/test-url?test=test&client_id=invalid&client_secret=invalid" {
+		t.Error("githubAuth modified the original request")
+	}
 }

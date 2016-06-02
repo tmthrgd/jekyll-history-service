@@ -15,14 +15,19 @@ type githubAuth struct {
 }
 
 func (ga githubAuth) RoundTrip(req *http.Request) (*http.Response, error) {
+	newReq := *req
+	url := *req.URL
 	q := req.URL.Query()
+
 	q.Set("client_id", ga.ID)
 	q.Set("client_secret", ga.Secret)
-	req.URL.RawQuery = q.Encode()
+
+	url.RawQuery = q.Encode()
+	newReq.URL = &url
 
 	if ga.Transport != nil {
-		return ga.Transport.RoundTrip(req)
+		return ga.Transport.RoundTrip(&newReq)
 	}
 
-	return http.DefaultTransport.RoundTrip(req)
+	return http.DefaultTransport.RoundTrip(&newReq)
 }
