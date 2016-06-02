@@ -28,12 +28,17 @@ var (
 	commitTemplate = template.Must(template.New("commit.tmpl").Funcs(templateFuncs).Parse(string(MustAsset("views/commit.tmpl"))))
 )
 
-func assetPath(name string) string {
+func assetPath(name string) (string, error) {
 	if strings.HasPrefix(name, "http://") || strings.HasPrefix(name, "https://") || strings.HasPrefix(name, "//") {
-		return name
+		return name, nil
 	}
 
-	return filepath.Join("/assets/", name)
+	name, err := AssetHashName(filepath.Join("assets/", name))
+	if err != nil {
+		return "", err
+	}
+
+	return "/" + name, nil
 }
 
 func truncate(value string, length int) string {

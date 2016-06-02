@@ -5,7 +5,10 @@
 
 package main
 
-import "testing"
+import (
+	"regexp"
+	"testing"
+)
 
 func TestTemplateFuncs(t *testing.T) {
 	if _, ok := templateFuncs["asset_path"]; !ok {
@@ -18,17 +21,35 @@ func TestTemplateFuncs(t *testing.T) {
 }
 
 func TestAssetPath(t *testing.T) {
+	// internal
 	for name, expect := range map[string]string{
-		// internal
-		"a":        "/assets/a",
-		"test.ext": "/assets/test.ext",
+		"style.css": `^/assets/style-[0-9a-f]{64}.css$`,
+		"commit.js": `^/assets/commit-[0-9a-f]{64}.js$`,
+	} {
+		expected := regexp.MustCompile(expect)
 
-		// external
+		path, err := assetPath(name)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if !expected.MatchString(path) {
+			t.Errorf("unexpected path for %s, expected %v, got %s", name, expect, path)
+		}
+	}
+
+	// external
+	for name, expect := range map[string]string{
 		"http://example.com/test.ext":  "http://example.com/test.ext",
 		"https://example.com/test.ext": "https://example.com/test.ext",
 		"//example.com/test.ext":       "//example.com/test.ext",
 	} {
-		if path := assetPath(name); path != expect {
+		path, err := assetPath(name)
+		if err != nil {
+			t.Error(err)
+		}
+
+		if path != expect {
 			t.Errorf("unexpected path for %s, expected %s, got %s", name, expect, path)
 		}
 	}

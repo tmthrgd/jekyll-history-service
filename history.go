@@ -27,6 +27,7 @@ import (
 )
 
 //go:generate go-bindata -nomemcopy -nocompress assets/... views/...
+//go:generate ./asset-hashes assets/* views/*
 //go:generate protoc --go_out=. groupcache.proto
 
 var debug bool
@@ -214,8 +215,16 @@ func main() {
 	baseRouter.Handler(http.MethodGet, "/favicon.ico", assetsRouter)
 	baseRouter.Handler(http.MethodHead, "/robots.txt", assetsRouter)
 	baseRouter.Handler(http.MethodGet, "/robots.txt", assetsRouter)
-	baseRouter.Handler(http.MethodHead, "/assets/*path", http.StripPrefix("/assets/", assetsRouter))
-	baseRouter.Handler(http.MethodGet, "/assets/*path", http.StripPrefix("/assets/", assetsRouter))
+
+	assetsHashRouter := http.FileServer(&assetfs.AssetFS{
+		Asset:     AssetFromNameHash,
+		AssetDir:  AssetDir,
+		AssetInfo: AssetInfoFromNameHash,
+
+		Prefix: "assets",
+	})
+	baseRouter.Handler(http.MethodHead, "/assets/*path", http.StripPrefix("/assets/", assetsHashRouter))
+	baseRouter.Handler(http.MethodGet, "/assets/*path", http.StripPrefix("/assets/", assetsHashRouter))
 
 	hs := new(hostSwitch)
 	hs.NotFound = &repoSwitch{
