@@ -19,8 +19,6 @@ import (
 	"github.com/google/go-github/github"
 	"github.com/gregjones/httpcache"
 	_ "github.com/joho/godotenv/autoload"
-	"github.com/mitchellh/goamz/aws"
-	"github.com/mitchellh/goamz/s3"
 )
 
 //go:generate go-bindata -nomemcopy -nocompress assets/... views/...
@@ -75,49 +73,9 @@ func main() {
 		fmt.Printf("using work directory '%s'\n", work)
 	}
 
-	var s3Bucket *s3.Bucket
-	var s3BucketNoGzip *s3.Bucket
-
-	endpoint := os.Getenv("S3_ENDPOINT")
-	if len(endpoint) == 0 {
-		endpoint = "us-east-1"
-	}
-
-	if bucket := os.Getenv("S3_BUCKET"); len(bucket) != 0 {
-		region, ok := aws.Regions[endpoint]
-		if !ok {
-			panic(fmt.Errorf("invalid S3_ENDPOINT value of %s", endpoint))
-		}
-
-		auth, err := aws.EnvAuth()
-		if err != nil {
-			panic(err)
-		}
-
-		s3Bucket = s3.New(auth, region).Bucket(bucket)
-		s3BucketNoGzip = s3.New(auth, region).Bucket(bucket)
-
-		clientTr := httpcache.NewMemoryCacheTransport()
-		clientTr.MarkCachedResponses = true
-
-		client := clientTr.Client()
-		s3Bucket.S3.HTTPClient = func() *http.Client {
-			return client
-		}
-
-		noGzipClientTr := httpcache.NewMemoryCacheTransport()
-		noGzipClientTr.MarkCachedResponses = true
-
-		noGzipTransport := *http.DefaultTransport.(*http.Transport)
-		noGzipTransport.DisableCompression = true
-		noGzipClientTr.Transport = &noGzipTransport
-
-		noGzipClient := noGzipClientTr.Client()
-		s3BucketNoGzip.S3.HTTPClient = func() *http.Client {
-			return noGzipClient
-		}
-	} else {
-		panic("S3_BUCKET must be set")
+	s3Bucket, s3BucketNoGzip, err := getS3Buckets()
+	if err != nil {
+		panic(err)
 	}
 
 	githubClientTr := httpcache.NewMemoryCacheTransport()
@@ -137,7 +95,6 @@ func main() {
 	githubClient.UserAgent = fullVersionStr
 
 	var executeJekyll func(src, dst string) error
-	var err error
 
 	switch jekyll {
 	case "shell":
