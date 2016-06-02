@@ -40,7 +40,7 @@
 				<span class=parent-commit><a href="/u/{{$.User}}/r/{{$.Repo}}/c/{{.SHA}}/">{{truncate .SHA 10}}</a></span> {{end -}}
 			</p>
 			{{- end}}
-			<p><a href="/u/{{.User}}/r/{{.Repo}}/c/{{.Commit.SHA}}/b/">Build Jekyll at this commit.</a><br>Permalink: <span class=permalink>http://jekyllhistory.org:8080/u/{{.User | urlquery}}/r/{{.Repo | urlquery}}/c/{{.Commit.SHA | urlquery}}/b/</span><span class=permalink-path contenteditable placeholder=path/to/file></span></p>
+			<p><a href="/u/{{.User}}/r/{{.Repo}}/c/{{.Commit.SHA}}/b/">Build Jekyll at this commit.</a><br>Permalink: <span class=permalink>http://jekyllhistory.org:8080/u/{{urlquery .User}}/r/{{urlquery .Repo}}/c/{{urlquery .Commit.SHA}}/b/</span><span class=permalink-path contenteditable placeholder=path/to/file></span></p>
 		</footer>
 	</main>
 
