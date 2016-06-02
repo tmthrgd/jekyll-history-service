@@ -18,10 +18,6 @@ import (
 
 func getRouter(httpPool http.Handler, poolOpts *groupcache.HTTPPoolOptions, githubClient *github.Client, highlightStyle string, buildJekyll *groupcache.Group, s3BucketNoGzip *s3.Bucket) http.Handler {
 	baseRouter := httprouter.New()
-	baseRouter.RedirectTrailingSlash = true
-	baseRouter.RedirectFixedPath = true
-	baseRouter.HandleMethodNotAllowed = true
-	baseRouter.HandleOPTIONS = true
 
 	baseRouter.Handler(http.MethodGet, poolOpts.BasePath, httpPool)
 
