@@ -7,7 +7,6 @@ package main
 
 import (
 	"bytes"
-	"html"
 	"html/template"
 	"net/http"
 	"path/filepath"
@@ -41,12 +40,12 @@ func assetPath(name string) string {
 
 var unquoteableRegexp = regexp.MustCompile("^[^ \t\n\f\r\"'`=<>]+$")
 
-func html5Attr(value string) string {
+func html5Attr(value string) template.HTML {
 	if unquoteableRegexp.MatchString(value) {
-		return html.EscapeString(value)
+		return template.HTML(template.HTMLEscapeString(value))
 	}
 
-	return `"` + html.EscapeString(value) + `"`
+	return template.HTML(`"` + template.HTMLEscapeString(value) + `"`)
 }
 
 func truncate(value string, length int) string {

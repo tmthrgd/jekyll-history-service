@@ -5,9 +5,7 @@
 
 package main
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestTemplateFuncs(t *testing.T) {
 	if _, ok := templateFuncs["asset_path"]; !ok {
@@ -55,7 +53,7 @@ func TestHTML5Attr(t *testing.T) {
 		"a=b":           `"a=b"`,
 		"one<and>two":   `"one&lt;and&gt;two"`,
 	} {
-		if attr := html5Attr(name); attr != expect {
+		if attr := string(html5Attr(name)); attr != expect {
 			t.Errorf("unexpected value for %q, expected %q, got %q", name, expect, attr)
 		}
 	}
