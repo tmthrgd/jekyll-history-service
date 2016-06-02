@@ -9,13 +9,10 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strings"
 
 	"github.com/julienschmidt/httprouter"
 )
-
-var githubPathRegex = regexp.MustCompile(`(?i)^/([^/]+)(?:/([^/]+)(?:/commit/([a-fA-F0-9]+)|/tree/([^/]+))?)?/?$`)
 
 func gotoHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	w.Header().Set("Cache-Control", "max-age=0")
@@ -52,18 +49,22 @@ func gotoHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	m := githubPathRegex.FindStringSubmatch(parsedURL.Path)
-	switch {
-	case m == nil:
-		newURL.Path = "/"
-	case len(m[4]) != 0:
-		newURL.Path = "/u/" + url.QueryEscape(m[1]) + "/r/" + url.QueryEscape(m[2]) + "/t/" + url.QueryEscape(m[4]) + "/"
-	case len(m[3]) != 0:
-		newURL.Path = "/u/" + url.QueryEscape(m[1]) + "/r/" + url.QueryEscape(m[2]) + "/c/" + url.QueryEscape(m[3]) + "/"
-	case len(m[2]) != 0:
-		newURL.Path = "/u/" + url.QueryEscape(m[1]) + "/r/" + url.QueryEscape(m[2]) + "/"
-	default:
-		newURL.Path = "/u/" + url.QueryEscape(m[1]) + "/"
+	switch path := strings.Split(strings.TrimSuffix(parsedURL.Path[1:], "/"), "/"); len(path) {
+	case 1:
+		if len(path[0]) == 0 {
+			break
+		}
+
+		newURL.Path = "/u/" + url.QueryEscape(path[0]) + "/"
+	case 2:
+		newURL.Path = "/u/" + url.QueryEscape(path[0]) + "/r/" + url.QueryEscape(path[1]) + "/"
+	case 4:
+		switch strings.ToLower(path[2]) {
+		case "commit":
+			newURL.Path = "/u/" + url.QueryEscape(path[0]) + "/r/" + url.QueryEscape(path[1]) + "/c/" + url.QueryEscape(path[3]) + "/"
+		case "tree":
+			newURL.Path = "/u/" + url.QueryEscape(path[0]) + "/r/" + url.QueryEscape(path[1]) + "/t/" + url.QueryEscape(path[3]) + "/"
+		}
 	}
 
 	http.Redirect(w, r, newURL.String(), http.StatusFound)
