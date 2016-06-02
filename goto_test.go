@@ -3,8 +3,6 @@
 // Modified BSD License license that can be found in
 // the LICENSE file.
 
-// GOMAXPROCS=10 go test
-
 package main
 
 import (
