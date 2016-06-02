@@ -4,16 +4,16 @@
 	<meta charset=utf-8>
 	<meta name=viewport content="width=device-width,initial-scale=1">
 	<title>{{.User}}/{{.Repo}}{{if .Tree -}}/{{.Tree}}{{end}} · jekyll-history</title>
-	<link rel=stylesheet href={{"style.css" | asset_path | html5_attr}}>
+	<link rel=stylesheet href="{{asset_path "style.css"}}">
 </head>
 <body>
 	<header class=site-header>
 		<h1><a href=/>jekyll-history</a></h1>
-		<h2><a href={{print "/u/" (.User | urlquery) "/" | html5_attr}}>{{.User}}</a>
+		<h2><a href="/u/{{.User}}/">{{.User}}</a>
 			{{- if .Tree -}}
-				/<a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/" | html5_attr}}>{{.Repo}}</a>/{{.Tree}} <a href={{print "https://github.com/" (.User | urlquery) "/" (.Repo | urlquery) "/tree/" (.Tree | urlquery) | html5_attr}} title="View on GitHub">⤴</a>
+				/<a href="/u/{{.User}}/r/{{.Repo}}/">{{.Repo}}</a>/{{.Tree}} <a href="https://github.com/{{.User}}/{{.Repo}}/tree/{{.Tree}}" title="View on GitHub">⤴</a>
 			{{- else -}}
-				/{{.Repo}} <a href={{print "https://github.com/" (.User | urlquery) "/" (.Repo | urlquery) | html5_attr}} title="View on GitHub">⤴</a>
+				/{{.Repo}} <a href="https://github.com/{{.User}}/{{.Repo}}" title="View on GitHub">⤴</a>
 			{{- end -}}
 		</h2>
 	</header>
@@ -21,8 +21,8 @@
 	<main>
 		<ul>
 		{{- range .Commits}}
-			<li><a href={{print "/u/" ($.User | urlquery) "/r/" ($.Repo | urlquery) "/c/" (.SHA | urlquery) "/" | html5_attr}}><code>{{truncate .SHA 10}}</code></a>:
-				{{- if .Commit}} {{.Commit.Message}}{{end}} <a href={{.HTMLURL | html5_attr}} title="View on GitHub">⤴</a></li>
+			<li><a href="/u/{{$.User}}/r/{{$.Repo}}/c/{{.SHA}}/"><code>{{truncate .SHA 10}}</code></a>:
+				{{- if .Commit}} {{.Commit.Message}}{{end}} <a href="{{.HTMLURL}}" title="View on GitHub">⤴</a></li>
 		{{- end}}
 		</ul>
 
@@ -32,23 +32,23 @@
 			<p>
 			{{- if .Tree -}}
 				{{- if (eq .Resp.PrevPage 1) -}}
-					<a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/t/" (.Tree | urlquery) "/" | html5_attr}}>← Prev page</a>
+					<a href="/u/{{.User}}/r/{{.Repo}}/t/{{.Tree}}/">← Prev page</a>
 				{{- else if (ne .Resp.PrevPage 0) -}}
-					<a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/t/" (.Tree | urlquery) "/p/" .Resp.PrevPage "/" | html5_attr}}>← Prev page</a>
+					<a href="/u/{{.User}}/r/{{.Repo}}/t/{{.Tree}}/p/{{.Resp.PrevPage}}/">← Prev page</a>
 				{{- end -}}
 				{{- if (and (ne .Resp.PrevPage 0) (ne .Resp.NextPage 0))}} · {{end -}}
 				{{- if (ne .Resp.NextPage 0) -}}
-					<a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/t/" (.Tree | urlquery) "/p/" .Resp.NextPage "/" | html5_attr}}>Next page →</a>
+					<a href="/u/{{.User}}/r/{{.Repo}}/t/{{.Tree}}/p/{{.Resp.NextPage}}/">Next page →</a>
 				{{- end -}}
 			{{- else -}}
 				{{- if (eq .Resp.PrevPage 1) -}}
-					<a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/" | html5_attr}}>← Prev page</a>
+					<a href="/u/{{.User}}/r/{{.Repo}}/">← Prev page</a>
 				{{- else if (ne .Resp.PrevPage 0) -}}
-					<a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/p/" .Resp.PrevPage "/" | html5_attr}}>← Prev page</a>
+					<a href="/u/{{.User}}/r/{{.Repo}}/p/{{.Resp.PrevPage}}/">← Prev page</a>
 				{{- end -}}
 				{{- if (and (ne .Resp.PrevPage 0) (ne .Resp.NextPage 0))}} · {{end -}}
 				{{- if (ne .Resp.NextPage 0) -}}
-					<a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/p/" .Resp.NextPage "/" | html5_attr}}>Next page →</a>
+					<a href="/u/{{.User}}/r/{{.Repo}}/p/{{.Resp.NextPage}}/">Next page →</a>
 				{{- end -}}
 			{{- end -}}
 			</p>

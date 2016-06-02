@@ -4,21 +4,21 @@
 	<meta charset=utf-8>
 	<meta name=viewport content="width=device-width,initial-scale=1">
 	<title>{{.User}}/{{.Repo}}@{{truncate .Commit.SHA 10}} · jekyll-history</title>
-	<link rel=stylesheet href={{"style.css" | asset_path | html5_attr}}>
-	<link rel=stylesheet href={{.HighlightStyle | asset_path | html5_attr}}>
+	<link rel=stylesheet href="{{asset_path "style.css"}}">
+	<link rel=stylesheet href="{{asset_path .HighlightStyle}}">
 </head>
 <body>
 	<header class=site-header>
 		<h1><a href=/>jekyll-history</a></h1>
-		<h2><a href={{print "/u/" (.User | urlquery) "/" | html5_attr}}>{{.User}}</a>/<a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/" | html5_attr}}>{{.Repo}}</a>@<code>{{truncate .Commit.SHA 10}}</code> <a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/c/" (.Commit.SHA | urlquery) "/b/" | html5_attr}} title="Build Jekyll at this commit">⇝</a>
-		{{- if (ne (len .Commit.Parents) 0)}} <a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/c/" ((index .Commit.Parents 0).SHA | urlquery) "/" | html5_attr}} title="Parent commit">↑</a>
-		{{- end}} <a href={{.Commit.HTMLURL | html5_attr}} title="View on GitHub">⤴</a></h2>
+		<h2><a href="/u/{{.User}}/">{{.User}}</a>/<a href="/u/{{.User}}/r/{{.Repo}}/">{{.Repo}}</a>@<code>{{truncate .Commit.SHA 10}}</code> <a href="/u/{{.User}}/r/{{.Repo}}/c/{{.Commit.SHA}}/b/" title="Build Jekyll at this commit">⇝</a>
+		{{- if (ne (len .Commit.Parents) 0)}} <a href="/u/{{.User}}/r/{{.Repo}}/c/{{(index .Commit.Parents 0).SHA}}/" title="Parent commit">↑</a>
+		{{- end}} <a href="{{.Commit.HTMLURL}}" title="View on GitHub">⤴</a></h2>
 	</header>
 
 	<main>
 		<header>
 			<p class=commit-message>{{.Commit.Commit.Message}}</p>
-			<p class=commit-author><a href={{.Commit.Author.HTMLURL | html5_attr}}>{{.Commit.Commit.Author.Name}}</a></p>
+			<p class=commit-author><a href="{{.Commit.Author.HTMLURL}}">{{.Commit.Commit.Author.Name}}</a></p>
 		</header>
 
 		{{- range .Commit.Files}}
@@ -37,15 +37,15 @@
 		<footer>
 			{{- if (ne (len .Commit.Parents) 0)}}
 			<p>Parents: {{range .Commit.Parents -}}
-				<span class=parent-commit><a href={{print "/u/" ($.User | urlquery) "/r/" ($.Repo | urlquery) "/c/" (.SHA | urlquery) "/" | html5_attr}}>{{truncate .SHA 10}}</a></span> {{end -}}
+				<span class=parent-commit><a href="/u/{{$.User}}/r/{{$.Repo}}/c/{{.SHA}}/">{{truncate .SHA 10}}</a></span> {{end -}}
 			</p>
 			{{- end}}
-			<p><a href={{print "/u/" (.User | urlquery) "/r/" (.Repo | urlquery) "/c/" (.Commit.SHA | urlquery) "/b/" | html5_attr}}>Build Jekyll at this commit.</a><br>Permalink: <span class=permalink>http://jekyllhistory.org:8080/u/{{.User | urlquery}}/r/{{.Repo | urlquery}}/c/{{.Commit.SHA | urlquery}}/b/</span><span class=permalink-path contenteditable placeholder=path/to/file></span></p>
+			<p><a href="/u/{{.User}}/r/{{.Repo}}/c/{{.Commit.SHA}}/b/">Build Jekyll at this commit.</a><br>Permalink: <span class=permalink>http://jekyllhistory.org:8080/u/{{.User | urlquery}}/r/{{.Repo | urlquery}}/c/{{.Commit.SHA | urlquery}}/b/</span><span class=permalink-path contenteditable placeholder=path/to/file></span></p>
 		</footer>
 	</main>
 
 	<script defer src=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/highlight.min.js></script>
 	<script defer src=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/diff.min.js></script>
-	<script defer src={{"commit.js" | asset_path | html5_attr}}></script>
+	<script defer src="{{asset_path "commit.js"}}"></script>
 </body>
 {{- /* -*- mode: html;-*- */ -}}

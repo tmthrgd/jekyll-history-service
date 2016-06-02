@@ -10,7 +10,6 @@ import (
 	"html/template"
 	"net/http"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -19,7 +18,6 @@ import (
 var (
 	templateFuncs = map[string]interface{}{
 		"asset_path": assetPath,
-		"html5_attr": html5Attr,
 		"truncate":   truncate,
 	}
 
@@ -36,16 +34,6 @@ func assetPath(name string) string {
 	}
 
 	return filepath.Join("/assets/", name)
-}
-
-var unquoteableRegexp = regexp.MustCompile("^[^ \t\n\f\r\"'`=<>]+$")
-
-func html5Attr(value string) template.HTML {
-	if unquoteableRegexp.MatchString(value) {
-		return template.HTML(template.HTMLEscapeString(value))
-	}
-
-	return template.HTML(`"` + template.HTMLEscapeString(value) + `"`)
 }
 
 func truncate(value string, length int) string {
