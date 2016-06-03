@@ -17,6 +17,7 @@ import (
 )
 
 //go:generate go-bindata -nomemcopy -nocompress assets/... views/...
+//go:generate gofmt -w bindata.go
 //go:generate ./asset-hashes assets/*
 //go:generate protoc --go_out=. groupcache.proto
 

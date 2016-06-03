@@ -277,14 +277,14 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"assets/commit.js": assetsCommitJs,
+	"assets/commit.js":  assetsCommitJs,
 	"assets/robots.txt": assetsRobotsTxt,
-	"assets/style.css": assetsStyleCss,
+	"assets/style.css":  assetsStyleCss,
 	"views/commit.tmpl": viewsCommitTmpl,
-	"views/error.tmpl": viewsErrorTmpl,
-	"views/index.tmpl": viewsIndexTmpl,
-	"views/repo.tmpl": viewsRepoTmpl,
-	"views/user.tmpl": viewsUserTmpl,
+	"views/error.tmpl":  viewsErrorTmpl,
+	"views/index.tmpl":  viewsIndexTmpl,
+	"views/repo.tmpl":   viewsRepoTmpl,
+	"views/user.tmpl":   viewsUserTmpl,
 }
 
 // AssetDir returns the file names below a certain
@@ -326,18 +326,19 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
+
 var _bintree = &bintree{nil, map[string]*bintree{
 	"assets": &bintree{nil, map[string]*bintree{
-		"commit.js": &bintree{assetsCommitJs, map[string]*bintree{}},
+		"commit.js":  &bintree{assetsCommitJs, map[string]*bintree{}},
 		"robots.txt": &bintree{assetsRobotsTxt, map[string]*bintree{}},
-		"style.css": &bintree{assetsStyleCss, map[string]*bintree{}},
+		"style.css":  &bintree{assetsStyleCss, map[string]*bintree{}},
 	}},
 	"views": &bintree{nil, map[string]*bintree{
 		"commit.tmpl": &bintree{viewsCommitTmpl, map[string]*bintree{}},
-		"error.tmpl": &bintree{viewsErrorTmpl, map[string]*bintree{}},
-		"index.tmpl": &bintree{viewsIndexTmpl, map[string]*bintree{}},
-		"repo.tmpl": &bintree{viewsRepoTmpl, map[string]*bintree{}},
-		"user.tmpl": &bintree{viewsUserTmpl, map[string]*bintree{}},
+		"error.tmpl":  &bintree{viewsErrorTmpl, map[string]*bintree{}},
+		"index.tmpl":  &bintree{viewsIndexTmpl, map[string]*bintree{}},
+		"repo.tmpl":   &bintree{viewsRepoTmpl, map[string]*bintree{}},
+		"user.tmpl":   &bintree{viewsUserTmpl, map[string]*bintree{}},
 	}},
 }}
 
@@ -387,4 +388,3 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
-
