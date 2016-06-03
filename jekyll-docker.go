@@ -208,7 +208,7 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 			seenWarningsMu.Unlock()
 		}
 
-		if err = api.ContainerStart(context.Background(), resp.ID, ""); err != nil {
+		if err = api.ContainerStart(context.Background(), resp.ID, types.ContainerStartOptions{}); err != nil {
 			return err
 		}
 
