@@ -15,9 +15,9 @@ import (
 const _assetHashLength = 64
 
 var _assetHashes = map[string]string{
-	"assets/commit.js": "87c6e7d8e6a7041eed85017be3192693719f8897670125c45bec6fcdde8ed883",
+	"assets/commit.js":  "87c6e7d8e6a7041eed85017be3192693719f8897670125c45bec6fcdde8ed883",
 	"assets/robots.txt": "f4347e7481764549a05b77820e3ab4a468273afc3935613db92267b7b97670b1",
-	"assets/style.css": "1b0471015f022ec73f4c085b7c8317b35e8faa7f77bdf1dfa3551323747e548e",
+	"assets/style.css":  "1b0471015f022ec73f4c085b7c8317b35e8faa7f77bdf1dfa3551323747e548e",
 }
 
 func AssetHash(name string) (string, error) {

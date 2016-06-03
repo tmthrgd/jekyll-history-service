@@ -129,4 +129,4 @@ func AssetInfoFromNameHash(name string) (os.FileInfo, error) {
 	return AssetInfo(name)
 }
 EOF
-) > $output_file
+) | gofmt > $output_file
