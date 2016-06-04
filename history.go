@@ -11,8 +11,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"runtime"
 	"os"
+	"runtime"
 
 	_ "github.com/joho/godotenv/autoload"
 )
