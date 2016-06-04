@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"runtime"
 	"os"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -45,7 +46,7 @@ func main() {
 
 	flag.Parse()
 
-	fmt.Println(fullVersionStr)
+	fmt.Printf("%s (Go runtime %s).\n", fullVersionStr, runtime.Version())
 
 	hasWork := false
 	flag.Visit(func(f *flag.Flag) {
