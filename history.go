@@ -47,6 +47,7 @@ func main() {
 	flag.Parse()
 
 	fmt.Printf("%s (Go runtime %s).\n", fullVersionStr, runtime.Version())
+	fmt.Println("Copyright 2016 Tom Thorogood. All rights reserved.")
 
 	hasWork := false
 	flag.Visit(func(f *flag.Flag) {
