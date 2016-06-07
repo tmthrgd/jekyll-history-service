@@ -24,10 +24,13 @@ import (
 
 var debug bool
 var verbose bool
+var hosted bool
 
 func main() {
 	flag.BoolVar(&debug, "debug", false, "do not delete temporary files")
 	flag.BoolVar(&verbose, "verbose", false, "log more information than normal")
+
+	flag.BoolVar(&hosted, "hosted", true, "run as a hosted service")
 
 	var addr string
 	flag.StringVar(&addr, "addr", ":8080", "the address to listen on")
@@ -71,6 +74,20 @@ func main() {
 		fmt.Printf("using work directory '%s'\n", work)
 	}
 
+	var repoPath string
+	if !hosted {
+		repoURL := flag.Arg(0)
+		if flag.NArgs() == 0 || len(repoURL) == 0 {
+			panic("repo url not specified")
+		}
+
+		var err error
+		repoPath, err = cloneGitRepo(repoURL)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	s3Bucket, s3BucketNoGzip, err := getS3Buckets()
 	if err != nil {
 		panic(err)
@@ -106,7 +123,7 @@ func main() {
 		GithubClient: githubClient,
 	})
 
-	router := getRouter(httpPool, poolOpts, githubClient, highlightStyle, buildJekyll, s3BucketNoGzip)
+	router := getRouter(httpPool, poolOpts, githubClient, highlightStyle, buildJekyll, s3BucketNoGzip, repoPath)
 
 	fmt.Printf("Listening on %s\n", addr)
 	log.Fatal(http.ListenAndServe(addr, router))

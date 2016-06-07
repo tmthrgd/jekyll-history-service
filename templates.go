@@ -26,6 +26,9 @@ var (
 	userTemplate   = template.Must(template.New("user.tmpl").Funcs(templateFuncs).Parse(string(MustAsset("views/user.tmpl"))))
 	repoTemplate   = template.Must(template.New("repo.tmpl").Funcs(templateFuncs).Parse(string(MustAsset("views/repo.tmpl"))))
 	commitTemplate = template.Must(template.New("commit.tmpl").Funcs(templateFuncs).Parse(string(MustAsset("views/commit.tmpl"))))
+
+	localRepoTemplate = template.Must(template.New("repo-local.tmpl").Funcs(templateFuncs).Parse(string(MustAsset("views/repo-local.tmpl"))))
+	localCommitTemplate = template.Must(template.New("commit-local.tmpl").Funcs(templateFuncs).Parse(string(MustAsset("views/commit-local.tmpl"))))
 )
 
 func assetPath(name string) (string, error) {

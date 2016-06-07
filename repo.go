@@ -87,3 +87,36 @@ func getRepoHandler(githubClient *github.Client) func(w http.ResponseWriter, r *
 		}
 	}
 }
+
+
+
+func getLocalRepoHandler(repoPath string) func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var cacheControl = fmt.Sprintf("public, max-age=%d", time.Minute/time.Second)
+
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		h := w.Header()
+		h.Set("Cache-Control", cacheControl)
+
+		if checkLastModified(w, r, time.Now(), time.Minute) {
+			return
+		}
+
+		commits, err := gitRepoCommits(repoDir)
+		if err != nil {
+			h.Del("Cache-Control")
+
+			log.Printf("%[1]T %[1]v", err)
+			http.Error(w, http.StatusText(http.StatusBadGateway), http.StatusBadGateway)
+			return
+		}
+
+		if wrote, err := executeTemplate(localRepoTemplate, commits, w); err != nil {
+			log.Printf("%[1]T %[1]v", err)
+
+			if !wrote {
+				h.Del("Cache-Control")
+				http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+			}
+		}
+	}
+}

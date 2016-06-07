@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang=en>
+<head>
+	<meta charset=utf-8>
+	<meta name=viewport content="width=device-width,initial-scale=1">
+	<title>{{.User}}/{{.Repo}}@{{truncate .Commit.SHA 10}} · jekyll-history</title>
+	<link rel=stylesheet href="{{asset_path "style.css"}}">
+	<link rel=stylesheet href="{{asset_path .HighlightStyle}}">
+</head>
+<body>
+	<header class=site-header>
+		<h1><a href=/>jekyll-history</a></h1>
+		<h2><a href="/u/{{.User}}/">{{.User}}</a>/<a href="/u/{{.User}}/r/{{.Repo}}/">{{.Repo}}</a>@<code>{{truncate .Commit.SHA 10}}</code> <a href="/u/{{.User}}/r/{{.Repo}}/c/{{.Commit.SHA}}/b/" title="Build Jekyll at this commit">⇝</a>
+		{{- if (ne (len .Commit.Parents) 0)}} <a href="/u/{{.User}}/r/{{.Repo}}/c/{{(index .Commit.Parents 0).SHA}}/" title="Parent commit">↑</a>
+		{{- end}} <a href="{{.Commit.HTMLURL}}" title="View on GitHub">⤴</a></h2>
+	</header>
+
+	<main>
+		<header>
+			<p class=commit-message>{{.Commit.Commit.Message}}</p>
+			<p class=commit-author><a href="{{.Commit.Author.HTMLURL}}">{{.Commit.Commit.Author.Name}}</a></p>
+		</header>
+
+		{{- range .Commit.Files}}
+
+		<div class=file-diff>
+			<h3>{{.Filename}}</h3>
+
+			{{if .Patch -}}
+				<pre><code class=language-diff>{{.Patch}}</code></pre>
+			{{- else -}}
+				<p class=file-status>{{.Status}}</p>
+			{{- end}}
+		</div>
+		{{- end}}
+
+		<footer>
+			{{- if (ne (len .Commit.Parents) 0)}}
+			<p>Parents: {{range .Commit.Parents -}}
+				<span class=parent-commit><a href="/u/{{$.User}}/r/{{$.Repo}}/c/{{.SHA}}/">{{truncate .SHA 10}}</a></span> {{end -}}
+			</p>
+			{{- end}}
+			<p><a href="/u/{{.User}}/r/{{.Repo}}/c/{{.Commit.SHA}}/b/">Build Jekyll at this commit.</a><br>Permalink: <span class=permalink>{{.URLBase}}/u/{{urlquery .User}}/r/{{urlquery .Repo}}/c/{{urlquery .Commit.SHA}}/b/</span><span class=permalink-path contenteditable placeholder=path/to/file></span></p>
+		</footer>
+	</main>
+
+	<script defer src=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/highlight.min.js></script>
+	<script defer src=https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.4.0/languages/diff.min.js></script>
+	<script defer src="{{asset_path "commit.js"}}"></script>
+</body>
+{{- /* -*- mode: html;-*- */ -}}

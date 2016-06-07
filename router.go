@@ -16,26 +16,36 @@ import (
 	"github.com/mitchellh/goamz/s3"
 )
 
-func getRouter(httpPool http.Handler, poolOpts *groupcache.HTTPPoolOptions, githubClient *github.Client, highlightStyle string, buildJekyll *groupcache.Group, s3BucketNoGzip *s3.Bucket) http.Handler {
+func getRouter(httpPool http.Handler, poolOpts *groupcache.HTTPPoolOptions, githubClient *github.Client, highlightStyle string, buildJekyll *groupcache.Group, s3BucketNoGzip *s3.Bucket, repoPath string) http.Handler {
 	baseRouter := httprouter.New()
 
 	baseRouter.Handler(http.MethodGet, poolOpts.BasePath, httpPool)
 
-	baseRouter.HEAD("/", indexHandler)
-	baseRouter.GET("/", indexHandler)
-	baseRouter.GET("/goto/", getGotoHandler())
-	user := getUserHandler(githubClient)
-	baseRouter.GET("/u/:user/", user)
-	baseRouter.GET("/u/:user/p/:page/", user)
-	repo := getRepoHandler(githubClient)
-	baseRouter.GET("/u/:user/r/:repo/", repo)
-	baseRouter.GET("/u/:user/r/:repo/p/:page/", repo)
-	baseRouter.GET("/u/:user/r/:repo/t/:tree/", repo)
-	baseRouter.GET("/u/:user/r/:repo/t/:tree/p/:page/", repo)
-	baseRouter.GET("/u/:user/r/:repo/c/:commit/", getCommitHandler(githubClient, highlightStyle))
-	buildCommit := getBuildCommitHandler(buildJekyll)
-	baseRouter.GET("/u/:user/r/:repo/c/:commit/b", buildCommit)
-	baseRouter.GET("/u/:user/r/:repo/c/:commit/b/*path", buildCommit)
+	if hosted {
+		baseRouter.HEAD("/", indexHandler)
+		baseRouter.GET("/", indexHandler)
+		baseRouter.GET("/goto/", getGotoHandler())
+		user := getUserHandler(githubClient)
+		baseRouter.GET("/u/:user/", user)
+		baseRouter.GET("/u/:user/p/:page/", user)
+		repo := getRepoHandler(githubClient)
+		baseRouter.GET("/u/:user/r/:repo/", repo)
+		baseRouter.GET("/u/:user/r/:repo/p/:page/", repo)
+		baseRouter.GET("/u/:user/r/:repo/t/:tree/", repo)
+		baseRouter.GET("/u/:user/r/:repo/t/:tree/p/:page/", repo)
+		baseRouter.GET("/u/:user/r/:repo/c/:commit/", getCommitHandler(githubClient, highlightStyle))
+		buildCommit := getBuildCommitHandler(buildJekyll)
+		baseRouter.GET("/u/:user/r/:repo/c/:commit/b", buildCommit)
+		baseRouter.GET("/u/:user/r/:repo/c/:commit/b/*path", buildCommit)
+	} else {
+		repo := getLocalRepoHandler(repoPath)
+		baseRouter.GET("/", repo)
+		baseRouter.GET("/p/:page/", repo)
+		baseRouter.GET("/c/:commit/", getLocalCommitHandler(repoPath, highlightStyle))
+		buildCommit := getLocalBuildCommitHandler(buildJekyll, repoPath)
+		baseRouter.GET("/c/:commit/b", buildCommit)
+		baseRouter.GET("/c/:commit/b/*path", buildCommit)
+	}
 
 	assetsRouter := http.FileServer(&assetfs.AssetFS{
 		Asset:     Asset,
@@ -57,30 +67,41 @@ func getRouter(httpPool http.Handler, poolOpts *groupcache.HTTPPoolOptions, gith
 		Prefix: "assets",
 	})
 
-	hs := new(hostSwitch)
-	hs.NotFound = &repoSwitch{
-		S3Bucket: s3BucketNoGzip,
+	errorRouter := errorHandler{
+		Handler: baseRouter,
 	}
 
-	hs.Add("jekyllhistory.com", hostRedirector{
-		Host: "jekyllhistory.org",
-		Code: http.StatusFound,
-	})
-	hs.Add("jekyllhistory.org", errorHandler{
-		Handler: baseRouter,
-	})
+	var router http.Handler
 
-	hs.Add("www.jekyllhistory.com", hostRedirector{
-		Host: "jekyllhistory.com",
-	})
-	hs.Add("www.jekyllhistory.org", hostRedirector{
-		Host: "jekyllhistory.org",
-	})
+	if hosted {
+		hs := new(hostSwitch)
+		hs.NotFound = &repoSwitch{
+			S3Bucket: s3BucketNoGzip,
+		}
 
-	var router http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Server", fullVersionStr)
-		hs.ServeHTTP(w, r)
-	})
+		hs.Add("jekyllhistory.com", hostRedirector{
+			Host: "jekyllhistory.org",
+			Code: http.StatusFound,
+		})
+		hs.Add("jekyllhistory.org", errorRouter)
+
+		hs.Add("www.jekyllhistory.com", hostRedirector{
+			Host: "jekyllhistory.com",
+		})
+		hs.Add("www.jekyllhistory.org", hostRedirector{
+			Host: "jekyllhistory.org",
+		})
+
+		router = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Server", fullVersionStr)
+			hs.ServeHTTP(w, r)
+		})
+	} else {
+		router = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Server", fullVersionStr)
+			errorRouter.ServeHTTP(w, r)
+		})
+	}
 
 	if verbose {
 		router = weblogs.HandlerWithOptions(router, &weblogs.Options{

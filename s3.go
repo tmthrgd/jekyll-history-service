@@ -16,6 +16,10 @@ import (
 )
 
 func getS3Buckets() (s3Bucket *s3.Bucket, s3BucketNoGzip *s3.Bucket, err error) {
+	if !hosted {
+		return nil, nil, nil
+	}
+
 	endpoint := os.Getenv("S3_ENDPOINT")
 	if len(endpoint) == 0 {
 		endpoint = "us-east-1"

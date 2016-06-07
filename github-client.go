@@ -14,6 +14,10 @@ import (
 )
 
 func getGithubClient() (*github.Client, error) {
+	if !hosted {
+		return nil, nil
+	}
+
 	transport := httpcache.NewMemoryCacheTransport()
 	transport.MarkCachedResponses = true
 

@@ -49,10 +49,14 @@ func getBuildCommitHandler(buildJekyll *groupcache.Group) func(w http.ResponseWr
 			return
 		}
 
-		url := *r.URL
-		url.Host = tag + "." + r.Host
-		url.Path = ps.ByName("path")
+		if hosted {
+			url := *r.URL
+			url.Host = tag + "." + r.Host
+			url.Path = ps.ByName("path")
 
-		http.Redirect(w, r, url.String(), http.StatusFound)
+			http.Redirect(w, r, url.String(), http.StatusFound)
+		} else {
+			
+		}
 	}
 }

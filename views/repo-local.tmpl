@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang=en>
+<head>
+	<meta charset=utf-8>
+	<meta name=viewport content="width=device-width,initial-scale=1">
+	<title>jekyll-history</title>
+	<link rel=stylesheet href="{{asset_path "style.css"}}">
+</head>
+<body>
+	<header class=site-header>
+		<h1><a href=/>jekyll-history</a></h1>
+	</header>
+
+	<main>
+		<ul>
+		{{- range .}}
+			<li><a href="/c/{{.SHA}}/"><code>{{truncate .SHA 10}}</code></a>:
+				{{- if .Commit}} {{.Commit.Message}}{{end -}}
+			</li>
+		{{- end}}
+		</ul>
+	</main>
+
+	<footer class=site-footer>
+		<p>© 2016 <a href=https://tomthorogood.co.uk/>Tom Thorogood</a>.</p>
+	</footer>
+</body>
+{{- /* -*- mode: html;-*- */ -}}

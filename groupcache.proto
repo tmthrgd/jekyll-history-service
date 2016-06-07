@@ -9,4 +9,5 @@ package main;
 message BuildJekyllResponse {
 	string error = 1;
 	int32 code = 2;
+	string path = 3;
 }
