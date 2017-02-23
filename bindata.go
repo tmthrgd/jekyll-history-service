@@ -140,7 +140,7 @@ func viewsCommitTmpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "views/commit.tmpl", size: 2192, mode: os.FileMode(436), modTime: time.Unix(1487842123, 0)}
+	info := bindataFileInfo{name: "views/commit.tmpl", size: 2192, mode: os.FileMode(420), modTime: time.Unix(1487842123, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -160,7 +160,7 @@ func viewsErrorTmpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "views/error.tmpl", size: 559, mode: os.FileMode(436), modTime: time.Unix(1487842123, 0)}
+	info := bindataFileInfo{name: "views/error.tmpl", size: 559, mode: os.FileMode(420), modTime: time.Unix(1487842123, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -180,7 +180,7 @@ func viewsIndexTmpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "views/index.tmpl", size: 815, mode: os.FileMode(436), modTime: time.Unix(1487842123, 0)}
+	info := bindataFileInfo{name: "views/index.tmpl", size: 815, mode: os.FileMode(420), modTime: time.Unix(1487842123, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -200,7 +200,7 @@ func viewsRepoTmpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "views/repo.tmpl", size: 2115, mode: os.FileMode(436), modTime: time.Unix(1487842123, 0)}
+	info := bindataFileInfo{name: "views/repo.tmpl", size: 2115, mode: os.FileMode(420), modTime: time.Unix(1487842123, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -220,7 +220,7 @@ func viewsUserTmpl() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "views/user.tmpl", size: 1175, mode: os.FileMode(436), modTime: time.Unix(1487842123, 0)}
+	info := bindataFileInfo{name: "views/user.tmpl", size: 1175, mode: os.FileMode(420), modTime: time.Unix(1487842123, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
