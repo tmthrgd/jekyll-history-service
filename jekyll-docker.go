@@ -139,7 +139,7 @@ func getExecuteDockerJekyll(optsflag string) (func(src, dst string) error, error
 		return nil, err
 	}
 
-	if _, _, err := api.ImageInspectWithRaw(context.Background(), opts.Config.Image, false); err != nil {
+	if _, _, err := api.ImageInspectWithRaw(context.Background(), opts.Config.Image); err != nil {
 		return nil, err
 	}
 
