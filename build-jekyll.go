@@ -218,6 +218,8 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 			return err
 		}
 
+		defer f.Close()
+
 		ctype := mime.TypeByExtension(filepath.Ext(filePath))
 		if len(ctype) == 0 {
 			// read a chunk to decide between utf-8 text and binary
@@ -227,7 +229,6 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 			ctype = http.DetectContentType(buf[:n])
 
 			if _, err := f.Seek(0, os.SEEK_SET); err != nil {
-				f.Close()
 				return err
 			}
 		}
@@ -267,7 +268,6 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 			"Content-Type":        {ctype},
 			"x-amz-storage-class": {"REDUCED_REDUNDANCY"},
 		}, "")
-		f.Close()
 		return err
 	}); err != nil {
 		resp.Error = fmt.Sprintf("%[1]T: %[1]v", err)
