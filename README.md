@@ -1,5 +1,7 @@
 # jekyll-history-service
 
+[![Build Status](https://travis-ci.org/tmthrgd/jekyll-history-service.svg?branch=master)](https://travis-ci.org/tmthrgd/jekyll-history-service)
+
 jekyll-history-service is a hosted service that downloads a git repository and runs `jekyll build` at
 any commit in its history.
 
