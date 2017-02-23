@@ -37,7 +37,7 @@ func TestCopyBufferParallel(t *testing.T) {
 type fakeReader int
 
 func (fr *fakeReader) Read(p []byte) (n int, err error) {
-	if int(*fr) < n {
+	if int(*fr) < len(p) {
 		return int(*fr), io.EOF
 	}
 
