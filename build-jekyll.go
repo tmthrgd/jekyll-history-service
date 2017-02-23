@@ -9,6 +9,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -67,7 +68,7 @@ func (bj buildJekyllGetter) Get(_ groupcache.Context, key string, dest groupcach
 		log.Printf("%[1]T: %[1]v", err)
 	}
 
-	u, gresp, err := bj.GithubClient.Repositories.GetArchiveLink(user, repo, github.Tarball, &github.RepositoryContentGetOptions{
+	u, gresp, err := bj.GithubClient.Repositories.GetArchiveLink(context.Background(), user, repo, github.Tarball, &github.RepositoryContentGetOptions{
 		Ref: commit,
 	})
 	if err != nil {

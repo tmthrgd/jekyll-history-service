@@ -6,6 +6,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -39,7 +40,7 @@ func getUserHandler(githubClient *github.Client) func(w http.ResponseWriter, r *
 
 		user := ps.ByName("user")
 
-		repos, resp, err := githubClient.Repositories.List(user, &github.RepositoryListOptions{
+		repos, resp, err := githubClient.Repositories.List(context.Background(), user, &github.RepositoryListOptions{
 			Sort: "updated",
 
 			ListOptions: github.ListOptions{
@@ -67,7 +68,7 @@ func getUserHandler(githubClient *github.Client) func(w http.ResponseWriter, r *
 
 		if wrote, err := executeTemplate(userTemplate, struct {
 			User  string
-			Repos []github.Repository
+			Repos []*github.Repository
 			Resp  *github.Response
 		}{
 			User:  user,

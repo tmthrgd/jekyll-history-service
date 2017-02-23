@@ -6,6 +6,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -39,7 +40,7 @@ func getRepoHandler(githubClient *github.Client) func(w http.ResponseWriter, r *
 
 		user, repo, tree := ps.ByName("user"), ps.ByName("repo"), ps.ByName("tree")
 
-		commits, resp, err := githubClient.Repositories.ListCommits(user, repo, &github.CommitsListOptions{
+		commits, resp, err := githubClient.Repositories.ListCommits(context.Background(), user, repo, &github.CommitsListOptions{
 			SHA: tree,
 
 			ListOptions: github.ListOptions{
@@ -69,7 +70,7 @@ func getRepoHandler(githubClient *github.Client) func(w http.ResponseWriter, r *
 			User    string
 			Repo    string
 			Tree    string
-			Commits []github.RepositoryCommit
+			Commits []*github.RepositoryCommit
 			Resp    *github.Response
 		}{
 			User:    user,

@@ -6,6 +6,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -29,7 +30,7 @@ func getCommitHandler(githubClient *github.Client, highlightStyle string) func(w
 
 		user, repo, commit := ps.ByName("user"), ps.ByName("repo"), ps.ByName("commit")
 
-		repoCommit, resp, err := githubClient.Repositories.GetCommit(user, repo, commit)
+		repoCommit, resp, err := githubClient.Repositories.GetCommit(context.Background(), user, repo, commit)
 		if err != nil {
 			h.Del("Cache-Control")
 
